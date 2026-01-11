@@ -855,3 +855,41 @@ body {
     padding: 1rem;
   }
 }
+
+/* Groups QR Share */
+.qr-modal {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.share-link-container {
+  margin-top: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.share-link-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.btn-copy-link {
+  padding: 6px 12px;
+  font-size: 14px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-copy-link:hover {
+  background: #5a6268;
+}

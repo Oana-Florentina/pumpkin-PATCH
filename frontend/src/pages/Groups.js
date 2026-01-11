@@ -81,6 +81,14 @@ function Groups() {
     return `${window.location.origin}/join-group?id=${group.id}&code=${group.inviteCode || 'INVITE'}`;
   };
 
+  const [copiedGroup, setCopiedGroup] = useState(null);
+
+  const copyLink = (url, groupId) => {
+    navigator.clipboard.writeText(url);
+    setCopiedGroup(groupId);
+    setTimeout(() => setCopiedGroup(null), 2000);
+  };
+
   return (
     <div className="page-container">
       <h1>Group Management</h1>
@@ -130,8 +138,22 @@ function Groups() {
               </button>
               {showQR === group.id && (
                 <div className="qr-modal">
-                  <QRCodeSVG value={generateGroupURL(group)} size={200} />
-                  <p>Scan to join group</p>
+                  <QRCodeSVG value={generateGroupURL(group)} size={180} />
+                  <p style={{margin: '10px 0', fontWeight: 'bold'}}>Scan to join group</p>
+                  <div className="share-link-container">
+                    <input 
+                      type="text" 
+                      value={generateGroupURL(group)} 
+                      readOnly 
+                      className="share-link-input"
+                    />
+                    <button 
+                      onClick={() => copyLink(generateGroupURL(group), group.id)} 
+                      className="btn-copy-link"
+                    >
+                      {copiedGroup === group.id ? '✓ Link Copied!' : '📋 Copy Link'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
