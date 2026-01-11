@@ -27,11 +27,10 @@ async function getPhobiaFromWikidata(wikidataId) {
 async function searchPhobiasInWikidata(searchTerm) {
   const query = `
     SELECT ?phobia ?label ?description WHERE {
-      ?phobia wdt:P31 wd:Q175854 .
+      ?phobia wdt:P279* wd:Q175854 .
       ?phobia rdfs:label ?label .
-      ?phobia schema:description ?description .
+      OPTIONAL { ?phobia schema:description ?description . FILTER(LANG(?description) = "en") }
       FILTER(LANG(?label) = "en")
-      FILTER(LANG(?description) = "en")
       FILTER(CONTAINS(LCASE(?label), LCASE("${searchTerm}")))
     } LIMIT 10
   `;
@@ -43,7 +42,7 @@ async function searchPhobiasInWikidata(searchTerm) {
   return data.results.bindings.map(b => ({
     wikidataId: b.phobia.value.split('/').pop(),
     label: b.label.value,
-    description: b.description.value
+    description: b.description?.value || ''
   }));
 }
 
