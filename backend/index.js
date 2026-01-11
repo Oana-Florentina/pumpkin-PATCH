@@ -8,6 +8,7 @@ app.use(express.json());
 app.use('/api/phobias', require('./routes/phobias'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/context', require('./routes/context'));
+app.use('/api/groups', require('./routes/groups'));
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
