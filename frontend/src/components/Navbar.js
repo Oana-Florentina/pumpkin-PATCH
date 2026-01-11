@@ -31,6 +31,7 @@ function Navbar({ user, setUser }) {
             <li><Link to="/dashboard" onClick={closeMenu}>Dashboard</Link></li>
             <li><Link to="/remedies" onClick={closeMenu}>Remedies</Link></li>
             <li><Link to="/alerts" onClick={closeMenu}>Alerts</Link></li>
+            <li><Link to="/devices" onClick={closeMenu}>Devices</Link></li>
             <li><Link to="/groups" onClick={closeMenu}>Groups</Link></li>
           </ul>
           <div className="nav-user">
