@@ -16,11 +16,13 @@ jobs:
         with:
           node-version: '18'
       
-      - name: Install and Zip
-        run: |
-          cd backend
-          npm install --production
-          zip -r function.zip index.js handler.js package.json routes/ services/ node_modules/
+      - name: Install dependencies
+        working-directory: backend
+        run: npm install --production
+      
+      - name: Create zip
+        working-directory: backend
+        run: zip -r function.zip .
       
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
@@ -30,7 +32,5 @@ jobs:
           aws-region: us-east-1
       
       - name: Deploy to Lambda
-        run: |
-          aws lambda update-function-code \
-            --function-name phoa-backend \
-            --zip-file fileb://backend/function.zip
+        working-directory: backend
+        run: aws lambda update-function-code --function-name phoa-backend --zip-file fileb://function.zip
