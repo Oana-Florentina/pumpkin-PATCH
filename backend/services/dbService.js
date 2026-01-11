@@ -62,7 +62,7 @@ async function getUserGroups(userId) {
   const groups = [];
   for (const i of Items || []) {
     const g = await getGroup(i.groupId);
-    if (g) groups.push({ id: i.groupId, name: g.name });
+    if (g) groups.push({ id: i.groupId, name: g.name, inviteCode: g.inviteCode });
   }
   return groups;
 }
