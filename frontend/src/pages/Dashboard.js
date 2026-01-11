@@ -1,23 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-
-const PHOBIAS = [
-  { id: 1, name: 'Arachnophobia', description: 'Fear of spiders', trigger: 'presence', code: 'D001238' },
-  { id: 2, name: 'Claustrophobia', description: 'Fear of enclosed spaces', trigger: 'location', code: 'D003027' },
-  { id: 3, name: 'Acrophobia', description: 'Fear of heights', trigger: 'location', code: 'D000342' },
-  { id: 4, name: 'Social Phobia', description: 'Fear of social situations', trigger: 'context', code: 'D012698' },
-  { id: 5, name: 'Agoraphobia', description: 'Fear of open spaces', trigger: 'location', code: 'D000379' },
-  { id: 6, name: 'Pollen Allergy', description: 'Allergic to pollen', trigger: 'seasonal', code: 'D006255' },
-  { id: 7, name: 'Aerophobia', description: 'Fear of flying', trigger: 'context', code: 'D005239' },
-  { id: 8, name: 'Cynophobia', description: 'Fear of dogs', trigger: 'presence', code: 'D010698' }
-];
+import { fetchPhobias } from '../services/api';
 
 function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   const navigate = useNavigate();
   const [showQR, setShowQR] = useState(null);
+  const [phobias, setPhobias] = useState([]);
   const currentSeason = 'Spring';
   const currentDate = new Date().toLocaleDateString();
+
+  useEffect(() => {
+    fetchPhobias().then(setPhobias).catch(err => {
+      console.error('Failed to fetch phobias:', err);
+      // Fallback to mock data if API fails
+      setPhobias([
+        { id: 1, name: 'Arachnophobia', description: 'Fear of spiders', trigger: 'presence', code: 'D001238' },
+        { id: 2, name: 'Claustrophobia', description: 'Fear of enclosed spaces', trigger: 'location', code: 'D003027' },
+        { id: 3, name: 'Acrophobia', description: 'Fear of heights', trigger: 'location', code: 'D000342' },
+        { id: 4, name: 'Social Phobia', description: 'Fear of social situations', trigger: 'context', code: 'D012698' },
+        { id: 5, name: 'Agoraphobia', description: 'Fear of open spaces', trigger: 'location', code: 'D000379' },
+        { id: 6, name: 'Pollen Allergy', description: 'Allergic to pollen', trigger: 'seasonal', code: 'D006255' },
+        { id: 7, name: 'Aerophobia', description: 'Fear of flying', trigger: 'context', code: 'D005239' },
+        { id: 8, name: 'Cynophobia', description: 'Fear of dogs', trigger: 'presence', code: 'D010698' }
+      ]);
+    });
+  }, []);
 
   const togglePhobia = (phobiaId) => {
     if (selectedPhobias.includes(phobiaId)) {
@@ -46,7 +54,7 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
       </div>
 
       <div className="phobia-grid">
-        {PHOBIAS.map(phobia => (
+        {phobias.map(phobia => (
           <div 
             key={phobia.id} 
             className={`phobia-card ${selectedPhobias.includes(phobia.id) ? 'selected' : ''}`}

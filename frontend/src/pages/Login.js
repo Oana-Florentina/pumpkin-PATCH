@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { login } from '../services/auth';
 
 function Login({ setUser }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock login - just set user
-    setUser({ name: email.split('@')[0], email, location: 'New York' });
-    navigate('/dashboard');
+    try {
+      const user = await login(email, password);
+      setUser(user);
+      navigate('/dashboard');
+    } catch (err) {
+      alert('Login failed: ' + err.message);
+    }
   };
 
   return (
