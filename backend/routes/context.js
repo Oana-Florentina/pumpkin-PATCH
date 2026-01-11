@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { alertToRdf } = require('../services/rdfService');
 
 // Reguli simple pentru alerte (vor fi înlocuite cu Apache Jena)
 const rules = [
@@ -39,6 +40,14 @@ router.post('/', (req, res) => {
       recommendations: rule.alert.recommendations,
       createdAt: new Date().toISOString()
     }));
+
+  if (req.query.format === 'jsonld') {
+    res.set('Content-Type', 'application/ld+json');
+    return res.json({
+      '@context': { '@vocab': 'http://schema.org/', 'phoa': 'http://example.org/phoa#' },
+      '@graph': alerts.map(a => alertToRdf(a))
+    });
+  }
 
   res.json({ success: true, data: { alerts } });
 });

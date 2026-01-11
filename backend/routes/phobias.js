@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { getPhobiaFromWikidata } = require('../services/sparqlService');
+const { getPhobiaFromWikidata, searchPhobiasInWikidata } = require('../services/sparqlService');
+const { phobiaToRdf, remedyToRdf } = require('../services/rdfService');
 
 const phobias = [
   {
@@ -44,28 +45,58 @@ const remedies = {
 };
 
 router.get('/', (req, res) => {
-  res.json({ success: true, data: phobias.map(({ id, name, description, wikidataId }) => ({ id, name, description, wikidataId })) });
+  const format = req.query.format;
+  const q = req.query.q;
+  
+  // Search în Wikidata
+  if (q) {
+    return searchPhobiasInWikidata(q)
+      .then(results => res.json({ success: true, data: results }))
+      .catch(() => res.json({ success: true, data: [] }));
+  }
+  
+  const data = phobias.map(({ id, name, description, wikidataId }) => ({ id, name, description, wikidataId }));
+  
+  if (format === 'jsonld') {
+    res.set('Content-Type', 'application/ld+json');
+    return res.json({
+      '@context': { '@vocab': 'http://schema.org/', 'phoa': 'http://example.org/phoa#' },
+      '@graph': phobias.map(p => phobiaToRdf(p))
+    });
+  }
+  res.json({ success: true, data });
 });
 
 router.get('/:id', async (req, res) => {
   const phobia = phobias.find(p => p.id === req.params.id);
   if (!phobia) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Phobia not found' } });
   
-  // Îmbogățește cu date din Wikidata
   try {
     const wikidata = await getPhobiaFromWikidata(phobia.wikidataId);
     if (wikidata) {
       phobia.wikidataLabel = wikidata.label;
       phobia.wikidataDescription = wikidata.description;
     }
-  } catch (e) { /* fallback la date locale */ }
+  } catch (e) {}
   
+  if (req.query.format === 'jsonld') {
+    res.set('Content-Type', 'application/ld+json');
+    return res.json(phobiaToRdf(phobia));
+  }
   res.json({ success: true, data: phobia });
 });
 
 router.get('/:id/remedies', (req, res) => {
   const r = remedies[req.params.id];
   if (!r) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Phobia not found' } });
+  
+  if (req.query.format === 'jsonld') {
+    res.set('Content-Type', 'application/ld+json');
+    return res.json({
+      '@context': { '@vocab': 'http://schema.org/', 'phoa': 'http://example.org/phoa#' },
+      '@graph': r.map(rem => remedyToRdf(rem, req.params.id))
+    });
+  }
   res.json({ success: true, data: r });
 });
 
