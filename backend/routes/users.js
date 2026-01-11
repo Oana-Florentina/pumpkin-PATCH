@@ -1,44 +1,36 @@
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('../middleware/auth');
 
-// Stocare temporară în memorie (va fi înlocuită cu DB)
 const userPhobias = {};
 const userAlerts = {};
 
-// GET /api/users/me/phobias
-router.get('/me/phobias', (req, res) => {
-  const userId = req.headers['x-user-id'] || 'demo-user';
-  const phobias = userPhobias[userId] || [];
+router.get('/me/phobias', authMiddleware, (req, res) => {
+  const phobias = userPhobias[req.userId] || [];
   res.json({ success: true, data: phobias });
 });
 
-// POST /api/users/me/phobias
-router.post('/me/phobias', (req, res) => {
-  const userId = req.headers['x-user-id'] || 'demo-user';
+router.post('/me/phobias', authMiddleware, (req, res) => {
   const { phobiaId } = req.body;
   if (!phobiaId) {
     return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Missing phobiaId' } });
   }
-  if (!userPhobias[userId]) userPhobias[userId] = [];
-  if (!userPhobias[userId].find(p => p.id === phobiaId)) {
-    userPhobias[userId].push({ id: phobiaId, addedAt: new Date().toISOString() });
+  if (!userPhobias[req.userId]) userPhobias[req.userId] = [];
+  if (!userPhobias[req.userId].find(p => p.id === phobiaId)) {
+    userPhobias[req.userId].push({ id: phobiaId, addedAt: new Date().toISOString() });
   }
   res.json({ success: true, data: { message: 'Phobia added', phobiaId } });
 });
 
-// DELETE /api/users/me/phobias/:id
-router.delete('/me/phobias/:id', (req, res) => {
-  const userId = req.headers['x-user-id'] || 'demo-user';
-  if (userPhobias[userId]) {
-    userPhobias[userId] = userPhobias[userId].filter(p => p.id !== req.params.id);
+router.delete('/me/phobias/:id', authMiddleware, (req, res) => {
+  if (userPhobias[req.userId]) {
+    userPhobias[req.userId] = userPhobias[req.userId].filter(p => p.id !== req.params.id);
   }
   res.json({ success: true, data: { message: 'Phobia removed', phobiaId: req.params.id } });
 });
 
-// GET /api/users/me/alerts
-router.get('/me/alerts', (req, res) => {
-  const userId = req.headers['x-user-id'] || 'demo-user';
-  const alerts = userAlerts[userId] || [];
+router.get('/me/alerts', authMiddleware, (req, res) => {
+  const alerts = userAlerts[req.userId] || [];
   res.json({ success: true, data: alerts });
 });
 
