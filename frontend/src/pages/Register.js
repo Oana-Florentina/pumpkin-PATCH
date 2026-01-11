@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { register } from '../services/auth';
 
 function Register({ setUser }) {
   const [name, setName] = useState('');
@@ -8,11 +9,15 @@ function Register({ setUser }) {
   const [location, setLocation] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock registration - just set user
-    setUser({ name, email, location });
-    navigate('/dashboard');
+    try {
+      await register(email, password);
+      alert('Registration successful! Check your email for confirmation link, then login.');
+      navigate('/login');
+    } catch (err) {
+      alert('Registration failed: ' + err.message);
+    }
   };
 
   return (
