@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPhobiaFromWikidata, searchPhobiasInWikidata } = require('../services/sparqlService');
+const { getPhobiaFromWikidata, searchPhobiasInWikidata, getAllPhobiasFromWikidata } = require('../services/sparqlService');
 const { phobiaToRdf, remedyToRdf } = require('../services/rdfService');
 
 const phobias = [
@@ -44,7 +44,7 @@ const remedies = {
   ]
 };
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const format = req.query.format;
   const q = req.query.q;
   
@@ -55,16 +55,21 @@ router.get('/', (req, res) => {
       .catch(() => res.json({ success: true, data: [] }));
   }
   
-  const data = phobias.map(({ id, name, description, wikidataId }) => ({ id, name, description, wikidataId }));
-  
-  if (format === 'jsonld') {
-    res.set('Content-Type', 'application/ld+json');
-    return res.json({
-      '@context': { '@vocab': 'http://schema.org/', 'phoa': 'http://example.org/phoa#' },
-      '@graph': phobias.map(p => phobiaToRdf(p))
-    });
+  // Returnează toate fobiile din Wikidata
+  try {
+    const allPhobias = await getAllPhobiasFromWikidata();
+    
+    if (format === 'jsonld') {
+      res.set('Content-Type', 'application/ld+json');
+      return res.json({
+        '@context': { '@vocab': 'http://schema.org/', 'phoa': 'http://example.org/phoa#' },
+        '@graph': allPhobias.map(p => phobiaToRdf(p))
+      });
+    }
+    res.json({ success: true, data: allPhobias });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed to fetch phobias' } });
   }
-  res.json({ success: true, data });
 });
 
 router.get('/:id', async (req, res) => {

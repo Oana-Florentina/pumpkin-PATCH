@@ -24,6 +24,27 @@ async function getPhobiaFromWikidata(wikidataId) {
   return null;
 }
 
+async function getAllPhobiasFromWikidata() {
+  const query = `
+    SELECT ?phobia ?label ?description WHERE {
+      ?phobia wdt:P279* wd:Q175854 .
+      ?phobia rdfs:label ?label .
+      OPTIONAL { ?phobia schema:description ?description . FILTER(LANG(?description) = "en") }
+      FILTER(LANG(?label) = "en")
+    }
+  `;
+  const url = `${WIKIDATA_ENDPOINT}?query=${encodeURIComponent(query)}&format=json`;
+  const res = await fetch(url, { headers: { 'User-Agent': 'PhoA-App/1.0' } });
+  const data = await res.json();
+  
+  return data.results.bindings.map(b => ({
+    id: b.phobia.value.split('/').pop(),
+    name: b.label.value || 'Unknown',
+    description: b.description?.value || 'No description available',
+    wikidataUrl: b.phobia.value
+  }));
+}
+
 async function searchPhobiasInWikidata(searchTerm) {
   const query = `
     SELECT ?phobia ?label ?description WHERE {
@@ -46,4 +67,4 @@ async function searchPhobiasInWikidata(searchTerm) {
   }));
 }
 
-module.exports = { getPhobiaFromWikidata, searchPhobiasInWikidata };
+module.exports = { getPhobiaFromWikidata, searchPhobiasInWikidata, getAllPhobiasFromWikidata };
