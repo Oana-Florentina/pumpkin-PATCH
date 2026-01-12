@@ -25,13 +25,20 @@ async function getAllPhobiasFromWikidata() {
   
   const phobias = [];
   for (const b of data.results.bindings) {
+    let description = b.description?.value;
+    
+    // Dacă nu are descriere, încearcă Wikipedia
+    if (!description || description === 'No description available') {
+      description = await fetchWikipediaDescription(b.label.value);
+    }
+    
     const phobia = {
       '@context': 'http://schema.org/',
       '@type': 'MedicalCondition',
       '@id': b.phobia.value,
       id: b.phobia.value.split('/').pop(),
       name: b.label.value,
-      description: b.description?.value || 'No description available',
+      description: description || 'No description available',
       image: b.image?.value || null,
       trigger: b.mainSubjectLabel?.value || null,
       possibleTreatment: await buildTreatments(b)
@@ -40,6 +47,17 @@ async function getAllPhobiasFromWikidata() {
   }
   
   return phobias;
+}
+
+async function fetchWikipediaDescription(phobiaName) {
+  try {
+    const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(phobiaName)}`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'PhoA-App/1.0' }, timeout: 3000 });
+    const data = await res.json();
+    return data.extract?.substring(0, 200) || null;
+  } catch (err) {
+    return null;
+  }
 }
 
 async function buildTreatments(binding) {
