@@ -38,8 +38,8 @@ function Devices() {
             ...prev,
             location: {
               ...prev.location,
-              type: locationData?.type || locationData?.category || 'Unknown',
-              address: locationData?.display_name || 'Unknown location'
+              type: locationData?.type || locationData?.amenity || 'Unknown',
+              name: locationData?.address?.city || locationData?.address?.town || 'Unknown'
             },
             environmentalData: {
               ...prev.environmentalData,
@@ -133,8 +133,8 @@ function Devices() {
             <h2>Environmental Context</h2>
             <div className="env-grid">
               <div className="env-item">
-                <span className="env-label">📍 Address</span>
-                <span className="env-value">{deviceData.location.address}</span>
+                <span className="env-label">📍 Location Type</span>
+                <span className="env-value">{deviceData.location.type}</span>
               </div>
               <div className="env-item">
                 <span className="env-label">🏠 Room Size</span>

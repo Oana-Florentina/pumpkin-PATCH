@@ -75,7 +75,8 @@ router.post('/', async (req, res) => {
     context.sun = sunData;
     
     const locationDetails = await getLocationDetails(latitude, longitude);
-    context.location = locationDetails;
+    context.locationType = locationDetails?.type || locationDetails?.amenity || 'unknown';
+    context.locationName = locationDetails?.address?.city || locationDetails?.address?.town || 'Unknown';
   }
 
   if (req.query.format === 'jsonld') {
