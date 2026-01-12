@@ -68,7 +68,12 @@ router.get('/', async (req, res) => {
       ExpressionAttributeValues: { ':pk': 'PHOBIA#' }
     }));
     
-    const phobias = Items || [];
+    // Sortează după număr de proprietăți
+    const phobias = (Items || []).sort((a, b) => {
+      const countA = [a.description !== 'No description available', a.image, a.nhsUrl, a.trigger, a.subreddit].filter(Boolean).length;
+      const countB = [b.description !== 'No description available', b.image, b.nhsUrl, b.trigger, b.subreddit].filter(Boolean).length;
+      return countB - countA;
+    });
     
     if (format === 'jsonld') {
       res.set('Content-Type', 'application/ld+json');

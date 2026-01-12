@@ -54,7 +54,7 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
       </div>
 
       <div className="phobia-grid">
-        {phobias.map(phobia => (
+        {phobias && phobias.map(phobia => (
           <div 
             key={phobia.id} 
             className={`phobia-card ${selectedPhobias.includes(phobia.id) ? 'selected' : ''}`}
@@ -62,10 +62,18 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
             typeof="MedicalCondition"
             resource={`#phobia-${phobia.id}`}
           >
-            <div onClick={() => togglePhobia(phobia.id)}>
+            {phobia.image && (
+              <img 
+                src={phobia.image} 
+                alt={phobia.name}
+                property="image"
+                style={{width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px 8px 0 0'}}
+              />
+            )}
+            <div onClick={() => togglePhobia(phobia.id)} style={{padding: '15px'}}>
               <h3 property="name">{phobia.name}</h3>
               <p property="description">{phobia.description}</p>
-              <span className="trigger-badge" property="code" content={phobia.code}>{phobia.trigger}</span>
+              {phobia.trigger && <span className="trigger-badge" property="code">{phobia.trigger}</span>}
               <meta property="url" content={generatePhobiaURL(phobia)} />
             </div>
             <button 
