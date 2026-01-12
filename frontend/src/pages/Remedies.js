@@ -59,9 +59,17 @@ function Remedies({ selectedPhobias }) {
               <h3>Recommended Treatments:</h3>
               {phobia.possibleTreatment.map((treatment, i) => (
                 <div key={i} className="treatment-card" typeof={treatment['@type']}>
-                  <h4 property="name">{treatment.name}</h4>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                    <span style={{fontSize: '24px'}}>
+                      {treatment['@type'] === 'WebPage' ? '🔗' : 
+                       treatment['@type'] === 'PsychologicalTreatment' ? '🧘' : '📄'}
+                    </span>
+                    <h4 property="name" style={{margin: 0}}>{treatment.name}</h4>
+                  </div>
                   {treatment.description && (
-                    <p property="description">{treatment.description}</p>
+                    <p property="description" style={{marginTop: '8px', color: '#666'}}>
+                      {treatment.description}
+                    </p>
                   )}
                   {treatment.url && (
                     <a 
@@ -70,8 +78,11 @@ function Remedies({ selectedPhobias }) {
                       rel="noopener noreferrer"
                       property="url"
                       className="btn-secondary"
+                      style={{marginTop: '10px', display: 'inline-block'}}
                     >
-                      Visit Resource →
+                      {treatment.url.includes('nhs.uk') ? '🏥 NHS Guide' :
+                       treatment.url.includes('reddit') ? '💬 Community' : 
+                       '🌐 Visit Resource'} →
                     </a>
                   )}
                 </div>
