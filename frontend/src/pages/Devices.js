@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getHeartbeat } from '../services/heartbeat';
 
 function Devices() {
   const [devices, setDevices] = useState([
@@ -24,7 +25,7 @@ function Devices() {
     const interval = setInterval(() => {
       setDeviceData(prev => ({
         ...prev,
-        heartRate: 70 + Math.floor(Math.random() * 10)
+        heartRate: getHeartbeat()
       }));
     }, 3000);
     return () => clearInterval(interval);
