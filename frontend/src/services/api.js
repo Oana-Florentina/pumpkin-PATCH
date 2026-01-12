@@ -22,6 +22,7 @@ export const sendContext = (ctx) => fetch(`${API}/api/context`, {
   console.log('📦 Full response:', d);
   console.log('🌤️ Weather data:', d.data.context.weather);
   console.log('🌅 Sunrise/Sunset data:', d.data.context.sun);
+  console.log('🗺️ Location details:', d.data.context.location);
   return d.data;
 });
 

@@ -4,6 +4,7 @@ const { alertToRdf } = require('../services/rdfService');
 const { getTimeBasedAlerts, getSeasonName, getTimeOfDay } = require('../services/timeService');
 const { getWeatherData } = require('../services/weatherService');
 const { getSunriseSunset } = require('../services/sunriseSunsetService');
+const { getLocationDetails } = require('../services/nominatimService');
 
 // Reguli simple pentru alerte (vor fi înlocuite cu Apache Jena)
 const rules = [
@@ -72,6 +73,9 @@ router.post('/', async (req, res) => {
     
     const sunData = await getSunriseSunset(latitude, longitude);
     context.sun = sunData;
+    
+    const locationDetails = await getLocationDetails(latitude, longitude);
+    context.location = locationDetails;
   }
 
   if (req.query.format === 'jsonld') {
