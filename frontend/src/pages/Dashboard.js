@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchPhobias } from '../services/api';
+import { fetchPhobias, fetchMyPhobias, addMyPhobia } from '../services/api';
 import { requestNotificationPermission } from '../services/notifications';
 
 function Dashboard({ selectedPhobias, setSelectedPhobias }) {
@@ -15,9 +15,9 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
 
   useEffect(() => {
     setLoading(true);
-    fetchPhobias()
-      .then(data => {
-        const withDesc = data.filter(p => p.description && p.description !== 'No description available');
+    Promise.all([fetchPhobias(), fetchMyPhobias()])
+      .then(([allPhobias, myPhobias]) => {
+        const withDesc = allPhobias.filter(p => p.description && p.description !== 'No description available');
         const sorted = withDesc.sort((a, b) => {
           const scoreA = [a.image, a.nhsUrl, a.subreddit, a.trigger].filter(Boolean).length;
           const scoreB = [b.image, b.nhsUrl, b.subreddit, b.trigger].filter(Boolean).length;
@@ -25,16 +25,22 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
           return a.name.localeCompare(b.name);
         });
         setPhobias(sorted);
+        setSelectedPhobias(myPhobias.map(p => p.id));
       })
       .catch(err => console.error('Failed to fetch phobias:', err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [setSelectedPhobias]);
 
-  const togglePhobia = (phobiaId) => {
+  const togglePhobia = async (phobiaId) => {
     if (selectedPhobias.includes(phobiaId)) {
       setSelectedPhobias(selectedPhobias.filter(id => id !== phobiaId));
     } else {
       setSelectedPhobias([...selectedPhobias, phobiaId]);
+      try {
+        await addMyPhobia(phobiaId);
+      } catch (err) {
+        console.error('Failed to save phobia:', err);
+      }
     }
   };
 
