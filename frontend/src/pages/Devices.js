@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getHeartbeat } from '../services/heartbeat';
+import { getHeartbeat, getAltitude } from '../services/deviceSimulator';
 
 function Devices() {
   const [devices, setDevices] = useState([
@@ -25,7 +25,11 @@ function Devices() {
     const interval = setInterval(() => {
       setDeviceData(prev => ({
         ...prev,
-        heartRate: getHeartbeat()
+        heartRate: getHeartbeat(),
+        environmentalData: {
+          ...prev.environmentalData,
+          altitude: `${getAltitude()}m`
+        }
       }));
     }, 3000);
     return () => clearInterval(interval);
