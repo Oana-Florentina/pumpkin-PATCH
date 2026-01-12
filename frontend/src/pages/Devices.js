@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getHeartbeat, getAltitude } from '../services/deviceSimulator';
+import { getHeartbeat, getAltitude, getNoiseLevel } from '../services/deviceSimulator';
 
 function Devices() {
   const [devices, setDevices] = useState([
@@ -16,7 +16,8 @@ function Devices() {
     environmentalData: {
       roomSize: 'Medium (15m²)',
       altitude: '10m',
-      temperature: '22°C'
+      temperature: '22°C',
+      noiseLevel: '45dB'
     }
   });
 
@@ -28,7 +29,8 @@ function Devices() {
         heartRate: getHeartbeat(),
         environmentalData: {
           ...prev.environmentalData,
-          altitude: `${getAltitude()}m`
+          altitude: `${getAltitude()}m`,
+          noiseLevel: `${getNoiseLevel()}dB`
         }
       }));
     }, 3000);
@@ -123,6 +125,10 @@ function Devices() {
               <div className="env-item">
                 <span className="env-label">Temperature:</span>
                 <span className="env-value">{deviceData.environmentalData.temperature}</span>
+              </div>
+              <div className="env-item">
+                <span className="env-label">Noise Level:</span>
+                <span className="env-value">{deviceData.environmentalData.noiseLevel}</span>
               </div>
             </div>
             <p className="env-note">

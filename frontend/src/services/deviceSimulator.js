@@ -10,4 +10,10 @@ const getAltitude = () => {
   return baseAltitude + variation;
 };
 
-export { getHeartbeat, getAltitude };
+const getNoiseLevel = () => {
+  const baseNoise = 40;
+  const variation = Math.floor(Math.random() * 40);
+  return baseNoise + variation;
+};
+
+export { getHeartbeat, getAltitude, getNoiseLevel };
