@@ -5,7 +5,6 @@ import { fetchPhobias } from '../services/api';
 
 function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   const navigate = useNavigate();
-  const [showQR, setShowQR] = useState(null);
   const [phobias, setPhobias] = useState([]);
   const currentSeason = 'Spring';
   const currentDate = new Date().toLocaleDateString();
@@ -84,23 +83,7 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
               <h3 property="name">{phobia.name}</h3>
               <p property="description">{phobia.description}</p>
               {phobia.trigger && <span className="trigger-badge" property="code">{phobia.trigger}</span>}
-              <meta property="url" content={generatePhobiaURL(phobia)} />
             </div>
-            <button 
-              className="qr-btn" 
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowQR(showQR === phobia.id ? null : phobia.id);
-              }}
-            >
-              📱 QR Code
-            </button>
-            {showQR === phobia.id && (
-              <div className="qr-container">
-                <QRCodeSVG value={generatePhobiaURL(phobia)} size={150} />
-                <p className="qr-label">Scan to share</p>
-              </div>
-            )}
           </div>
         ))}
       </div>
