@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getHeartbeat, getAltitude, getNoiseLevel } from '../services/deviceSimulator';
+import { getHeartbeat, getAltitude, getNoiseLevel, getRoomSize } from '../services/deviceSimulator';
 
 function Devices() {
   const [devices, setDevices] = useState([
@@ -27,7 +27,8 @@ function Devices() {
         environmentalData: {
           ...prev.environmentalData,
           altitude: `${getAltitude()}m`,
-          noiseLevel: `${getNoiseLevel()}dB`
+          noiseLevel: `${getNoiseLevel()}dB`,
+          roomSize: getRoomSize()
         }
       }));
     }, 3000);
