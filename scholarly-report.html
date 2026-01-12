@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhoA: Phobia Web Assistant - Technical Report</title>
+  <link rel="stylesheet" href="https://w3c.github.io/scholarly-html/css/scholarly.min.css">
+  <link rel="stylesheet" href="scholarly-custom.css">
+</head>
+<body prefix="schema: http://schema.org/ xsd: http://www.w3.org/2001/XMLSchema# sa: https://ns.science.ai/">
+  
+  <header>
+    <h1>PhoA: Phobia Web Assistant</h1>
+    <div role="contentinfo">
+      <section typeof="sa:AuthorsList">
+        <h2>Authors</h2>
+        <ul>
+          <li typeof="sa:ContributorRole" property="schema:author">
+            <span typeof="schema:Person">
+              <meta property="schema:givenName" content="[First Name]">
+              <meta property="schema:familyName" content="[Last Name]">
+              <span property="schema:name">Briana-Stefania Maftei</span>
+            </span>
+            <ul>
+              <li property="schema:roleContactPoint" typeof="schema:ContactPoint">
+                <a href="mailto:[email]" property="schema:email">briana.maftei@gmail.com</a>
+              </li>
+            </ul>
+          </li>
+          <li typeof="sa:ContributorRole" property="schema:author">
+            <span typeof="schema:Person">
+              <meta property="schema:givenName" content="[First Name]">
+              <meta property="schema:familyName" content="[Last Name]">
+              <span property="schema:name">Oana-Florentina Dumitriu</span>
+            </span>
+            <ul>
+              <li property="schema:roleContactPoint" typeof="schema:ContactPoint">
+                <a href="mailto:[email]" property="schema:email">floryflorentina55@gmail.com</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h2>Affiliation</h2>
+        <p>
+          Faculty of Computer Science<br>
+          Alexandru Ioan Cuza University of Iași<br>
+          Romania
+        </p>
+      </section>
+      <section>
+        <h2>License</h2>
+        <p>
+          <a href="https://opensource.org/licenses/MIT">MIT License</a>
+        </p>
+      </section>
+    </div>
+  </header>
+
+  <article typeof="schema:ScholarlyArticle" resource="#">
+    
+    <section typeof="sa:Abstract" id="abstract" role="doc-abstract">
+      <h2>Abstract</h2>
+      <p>
+        PhoA (Phobia Web Assistant) is a multi-device web application designed to help users manage and overcome phobias through personalized remedies, context-aware alerts, and semantic web integration. The system leverages DBpedia and Wikidata knowledge bases, implements RDF data modeling with Schema.org vocabulary, and provides real-time monitoring through device integration. Context-aware notifications are triggered based on environmental factors including time, location, weather conditions, and physiological sensors. The application follows modern web engineering practices with a microservices architecture deployed on AWS cloud infrastructure.
+      </p>
+    </section>
+
+    <section id="introduction">
+      <h2>1. Introduction</h2>
+      <p>
+        Phobias affect millions of people worldwide, significantly impacting their quality of life. Traditional treatment approaches often lack personalization and real-time contextual awareness. PhoA addresses these limitations by combining semantic web technologies with modern cloud-based architecture to deliver intelligent, context-aware phobia management.
+      </p>
+      
+      <section id="motivation">
+        <h3>1.1 Motivation</h3>
+        <p>
+          The motivation for developing PhoA stems from the need for:
+        </p>
+        <ul>
+          <li>Personalized phobia management based on individual user profiles</li>
+          <li>Context-aware alerts triggered by environmental and physiological factors</li>
+          <li>Integration with semantic web knowledge bases for evidence-based remedies</li>
+          <li>Multi-user support for families, coworkers, and social networks</li>
+          <li>Real-time monitoring through wearable devices and sensors</li>
+        </ul>
+      </section>
+
+      <section id="objectives">
+        <h3>1.2 Objectives</h3>
+        <p>
+          The primary objectives of this project are:
+        </p>
+        <ol>
+          <li>Develop a semantic web-based application using RDF, SPARQL, and Schema.org</li>
+          <li>Implement context-aware alert system based on time, location, and environmental data</li>
+          <li>Integrate with DBpedia and Wikidata for phobia information and remedies</li>
+          <li>Provide multi-device support with smartwatch integration</li>
+          <li>Deploy a scalable microservices architecture on AWS cloud</li>
+          <li>Implement rule-based reasoning for intelligent alert generation</li>
+        </ol>
+      </section>
+    </section>
+
+    <section id="related-work">
+      <h2>2. Related Work</h2>
+      <p>
+        Several approaches exist for phobia treatment and mental health management:
+      </p>
+      <ul>
+        <li><strong>Virtual Reality Exposure Therapy (VRET):</strong> Uses immersive VR environments for gradual exposure to phobic stimuli</li>
+        <li><strong>Mobile Mental Health Apps:</strong> Applications like Headspace and Calm provide meditation and anxiety management</li>
+        <li><strong>Wearable Health Monitoring:</strong> Devices tracking physiological responses to stress and anxiety</li>
+        <li><strong>Semantic Health Systems:</strong> Knowledge-based systems using medical ontologies for diagnosis and treatment</li>
+      </ul>
+      <p>
+        PhoA differentiates itself by combining semantic web technologies with real-time context awareness and multi-user support, providing a comprehensive solution for phobia management.
+      </p>
+    </section>
+
+    <section id="architecture">
+      <h2>3. System Architecture</h2>
+      
+      <section id="overview">
+        <h3>3.1 Overview</h3>
+        <p>
+          PhoA follows a microservices architecture with clear separation between frontend, backend services, and data storage. The system is deployed on AWS cloud infrastructure for scalability and reliability.
+        </p>
+      </section>
+
+      <section id="components">
+        <h3>3.2 Components</h3>
+        
+        <h4>3.2.1 Frontend</h4>
+        <p>
+          Built with React 18.2.0, the frontend provides:
+        </p>
+        <ul>
+          <li>Responsive web interface with mobile support</li>
+          <li>RDFa markup for semantic data representation</li>
+          <li>Real-time device data visualization</li>
+          <li>Dark mode with automatic theme switching based on phobias</li>
+        </ul>
+
+        <h4>3.2.2 Backend Services</h4>
+        <p>
+          Node.js/Express microservices deployed on AWS Lambda:
+        </p>
+        <ul>
+          <li><code>authService.js</code> - AWS Cognito authentication</li>
+          <li><code>rdfService.js</code> - RDF data conversion and Schema.org mapping</li>
+          <li><code>timeService.js</code> - Time-based alert generation</li>
+          <li><code>weatherService.js</code> - Open-Meteo API integration</li>
+          <li><code>sunriseSunsetService.js</code> - Daylight tracking for nyctophobia</li>
+          <li><code>nominatimService.js</code> - Location type detection</li>
+        </ul>
+
+        <h4>3.2.3 Data Storage</h4>
+        <p>
+          AWS DynamoDB for NoSQL data storage with tables for:
+        </p>
+        <ul>
+          <li>Users and authentication</li>
+          <li>Phobia definitions with Wikidata IDs</li>
+          <li>User-phobia associations</li>
+          <li>Alert history and context data</li>
+        </ul>
+      </section>
+
+      <section id="technologies">
+        <h3>3.3 Technology Stack</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Technology</th>
+              <th>Version</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Frontend Framework</td>
+              <td>React</td>
+              <td>18.2.0</td>
+            </tr>
+            <tr>
+              <td>Routing</td>
+              <td>React Router DOM</td>
+              <td>7.12.0</td>
+            </tr>
+            <tr>
+              <td>Backend Runtime</td>
+              <td>Node.js + Express</td>
+              <td>5.2.1</td>
+            </tr>
+            <tr>
+              <td>Serverless</td>
+              <td>AWS Lambda</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>Database</td>
+              <td>AWS DynamoDB</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>Authentication</td>
+              <td>AWS Cognito</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>HTTP Client</td>
+              <td>Axios</td>
+              <td>1.13.2</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </section>
+
+    <section id="semantic-web">
+      <h2>4. Semantic Web Integration</h2>
+      
+      <section id="rdf-modeling">
+        <h3>4.1 RDF Data Modeling</h3>
+        <p>
+          All phobia data is modeled using Schema.org vocabulary with the following types:
+        </p>
+        <ul>
+          <li><code>MedicalCondition</code> - Phobia definitions</li>
+          <li><code>MedicalObservation</code> - Health monitoring data</li>
+          <li><code>MedicalTherapy</code> - Treatment recommendations</li>
+          <li><code>Drug</code> - Medication information</li>
+        </ul>
+        
+        <h4>Example RDFa Markup:</h4>
+        <pre><code>&lt;div vocab="http://schema.org/" typeof="MedicalCondition"&gt;
+  &lt;h2 property="name"&gt;Arachnophobia&lt;/h2&gt;
+  &lt;p property="description"&gt;Fear of spiders&lt;/p&gt;
+  &lt;span property="code" typeof="MedicalCode"&gt;
+    &lt;meta property="codeValue" content="F40.210"/&gt;
+  &lt;/span&gt;
+&lt;/div&gt;</code></pre>
+      </section>
+
+      <section id="sparql-queries">
+        <h3>4.2 SPARQL Queries</h3>
+        <p>
+          Five SPARQL queries are implemented for knowledge base integration:
+        </p>
+        
+        <h4>Query 1: Phobia Information from DBpedia</h4>
+        <pre><code>PREFIX dbo: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+SELECT ?phobia ?label ?abstract
+WHERE {
+  ?phobia a dbo:Disease ;
+          rdfs:label ?label ;
+          dbo:abstract ?abstract .
+  FILTER(CONTAINS(LCASE(?label), "phobia"))
+  FILTER(LANG(?label) = "en")
+}
+LIMIT 10</code></pre>
+
+        <h4>Query 2: Medications from Wikidata</h4>
+        <pre><code>PREFIX wd: &lt;http://www.wikidata.org/entity/&gt;
+PREFIX wdt: &lt;http://www.wikidata.org/prop/direct/&gt;
+SELECT ?drug ?drugLabel ?indication
+WHERE {
+  ?drug wdt:P31 wd:Q12140 ;
+        wdt:P2175 ?condition ;
+        rdfs:label ?drugLabel .
+  FILTER(CONTAINS(LCASE(?indication), "anxiety"))
+}
+LIMIT 20</code></pre>
+
+        <p>
+          Additional queries retrieve therapeutic procedures, allergy information, and symptom data. Full query documentation available in <code>SPARQL_QUERIES.md</code>.
+        </p>
+      </section>
+
+      <section id="knowledge-bases">
+        <h3>4.3 Knowledge Base Integration</h3>
+        <ul>
+          <li><strong>DBpedia:</strong> Phobia definitions, symptoms, and general medical information</li>
+          <li><strong>Wikidata:</strong> Structured data for medications, treatments, and medical codes</li>
+          <li><strong>Schema.org:</strong> Vocabulary for semantic markup and data interchange</li>
+        </ul>
+      </section>
+    </section>
+
+    <section id="context-awareness">
+      <h2>5. Context-Aware Alert System</h2>
+      
+      <section id="rule-based">
+        <h3>5.1 Rule-Based Reasoning</h3>
+        <p>
+          The system implements rule-based logic for intelligent alert generation:
+        </p>
+        
+        <h4>Rule Example 1: Seasonal Allergies</h4>
+        <pre><code>IF phobia = "pollenAllergy" 
+   AND season = "Spring" 
+   AND pollenLevel = "High"
+THEN 
+   sendAlert("High pollen levels detected")
+   suggestRemedy("Take antihistamine")</code></pre>
+
+        <h4>Rule Example 2: Nyctophobia (Fear of Darkness)</h4>
+        <pre><code>IF phobia = "nyctophobia" 
+   AND timeOfDay = "Night"
+THEN 
+   forceTheme("light-mode")
+   sendAlert("Nighttime detected. Keep lights on")</code></pre>
+
+        <h4>Rule Example 3: Claustrophobia</h4>
+        <pre><code>IF phobia = "claustrophobia" 
+   AND roomSize = "Small"
+THEN 
+   sendAlert("Small space detected")
+   suggestRemedy("Practice breathing exercises")</code></pre>
+      </section>
+
+      <section id="context-sources">
+        <h3>5.2 Context Data Sources</h3>
+        
+        <h4>5.2.1 Temporal Context</h4>
+        <ul>
+          <li>Time of day (morning, afternoon, evening, night)</li>
+          <li>Day of week (weekend social event warnings)</li>
+          <li>Season (Spring, Summer, Fall, Winter)</li>
+          <li>Sunrise/sunset times (Sunrise-Sunset.org API)</li>
+        </ul>
+
+        <h4>5.2.2 Environmental Context</h4>
+        <ul>
+          <li>Weather conditions (Open-Meteo API)</li>
+          <li>Temperature, humidity, precipitation</li>
+          <li>UV index, cloud cover, wind speed</li>
+          <li>Weather code (WMO standard 0-99)</li>
+        </ul>
+
+        <h4>5.2.3 Location Context</h4>
+        <ul>
+          <li>GPS coordinates (browser geolocation)</li>
+          <li>Address and place type (Nominatim API)</li>
+          <li>Nearby amenities (hospitals, bridges, tunnels)</li>
+        </ul>
+
+        <h4>5.2.4 Physiological Context</h4>
+        <ul>
+          <li>Heart rate monitoring (simulated smartwatch)</li>
+          <li>Altitude tracking</li>
+          <li>Noise level detection</li>
+          <li>Room size estimation</li>
+        </ul>
+      </section>
+    </section>
+
+    <section id="features">
+      <h2>6. Key Features</h2>
+      
+      <section id="dashboard">
+        <h3>6.1 Dashboard</h3>
+        <ul>
+          <li>Search functionality for phobia database</li>
+          <li>Pagination (10 items per page)</li>
+          <li>Separate sections: "My Phobias" vs "Add Phobias to Track"</li>
+          <li>Dark mode toggle with automatic theme switching</li>
+        </ul>
+      </section>
+
+      <section id="remedies">
+        <h3>6.2 Remedies</h3>
+        <ul>
+          <li>Medication recommendations linked to Wikidata</li>
+          <li>Physical exercises and breathing techniques</li>
+          <li>Reddit communities for talking</li>
+          <li>Psychological therapy suggestions</li>
+          <li>External web resources (DBpedia links)</li>
+        </ul>
+      </section>
+
+      <section id="alerts">
+        <h3>6.3 Alerts</h3>
+        <ul>
+          <li>Time-based: Nighttime, seasonal, medication reminders</li>
+          <li>Weather-based: Temperature extremes, precipitation</li>
+          <li>Location-based: Place type detection</li>
+          <li>Device-based: Heart rate, altitude, noise monitoring</li>
+        </ul>
+      </section>
+
+      <section id="groups">
+        <h3>6.4 Groups</h3>
+        <ul>
+          <li>Multi-user management (family, coworkers)</li>
+          <li>Shared phobia tracking</li>
+          <li>Group alerts and notifications</li>
+        </ul>
+      </section>
+
+      <section id="devices">
+        <h3>6.5 Devices</h3>
+        <ul>
+          <li>Smartwatch integration (simulated)</li>
+          <li>Real-time health monitoring (simulated)</li>
+          <li>Environmental sensor data</li>
+          <li>Location and address display</li>
+        </ul>
+      </section>
+    </section>
+
+    <section id="implementation">
+      <h2>7. Implementation Details</h2>
+      
+      <section id="api-integration">
+        <h3>7.1 External API Integration</h3>
+        <p>
+          All integrated APIs are free and require no authentication keys:
+        </p>
+        <ul>
+          <li><strong>Open-Meteo:</strong> <code>https://api.open-meteo.com/v1/forecast</code></li>
+          <li><strong>Sunrise-Sunset.org:</strong> <code>https://api.sunrise-sunset.org/json</code></li>
+          <li><strong>Nominatim:</strong> <code>https://nominatim.openstreetmap.org/reverse</code></li>
+        </ul>
+      </section>
+
+      <section id="authentication">
+        <h3>7.2 Authentication</h3>
+        <p>
+          AWS Cognito provides secure user authentication with:
+        </p>
+        <ul>
+          <li>User registration and login</li>
+          <li>JWT token-based authorization</li>
+          <li>Password reset functionality</li>
+          <li>Session management</li>
+        </ul>
+      </section>
+
+      <section id="deployment">
+        <h3>7.3 Deployment</h3>
+        <p>
+          The application is deployed using:
+        </p>
+        <ul>
+          <li><strong>Frontend:</strong> AWS S3 + CloudFront</li>
+          <li><strong>Backend:</strong> AWS Lambda with API Gateway</li>
+          <li><strong>Database:</strong> AWS DynamoDB</li>
+          <li><strong>CI/CD:</strong> GitHub Actions workflows</li>
+        </ul>
+      </section>
+    </section>
+
+    <section id="evaluation">
+      <h2>8. Evaluation</h2>
+      
+      <section id="requirements-compliance">
+        <h3>8.1 Requirements Compliance</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Requirement</th>
+              <th>Status</th>
+              <th>Implementation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>RDF Data Modeling</td>
+              <td>✅ Complete</td>
+              <td>Schema.org vocabulary, RDFa markup</td>
+            </tr>
+            <tr>
+              <td>SPARQL Queries</td>
+              <td>✅ Complete</td>
+              <td>5+ queries for DBpedia/Wikidata</td>
+            </tr>
+            <tr>
+              <td>Context-Aware Alerts</td>
+              <td>✅ Complete</td>
+              <td>Time, location, weather, device sensors</td>
+            </tr>
+            <tr>
+              <td>Multi-Device Support</td>
+              <td>✅ Complete</td>
+              <td>Web + smartwatch simulation</td>
+            </tr>
+            <tr>
+              <td>User/Group Management</td>
+              <td>✅ Complete</td>
+              <td>AWS Cognito + DynamoDB</td>
+            </tr>
+            <tr>
+              <td>Rule-Based Reasoning</td>
+              <td>✅ Complete</td>
+              <td>IF-THEN rules for alerts</td>
+            </tr>
+            <tr>
+              <td>Cloud Deployment</td>
+              <td>✅ Complete</td>
+              <td>AWS Lambda, DynamoDB, Cognito</td>
+            </tr>
+            <tr>
+              <td>Open Source</td>
+              <td>✅ Complete</td>
+              <td>GitHub repository, MIT License</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="bonus-features">
+        <h3>8.2 Bonus Features</h3>
+        <ul>
+          <li>✅ Rule-based approach for intelligent alerts</li>
+          <li>✅ Cloud-based deployment (AWS)</li>
+          <li>✅ Microservices architecture</li>
+          <li>✅ Multiple API integrations (weather, location, astronomy)</li>
+          <li>✅ Real-time device monitoring</li>
+          <li>✅ Responsive design with dark mode</li>
+        </ul>
+      </section>
+    </section>
+
+    <section id="conclusions">
+      <h2>9. Conclusions and Future Work</h2>
+      
+      <section id="conclusions-summary">
+        <h3>9.1 Summary</h3>
+        <p>
+          PhoA successfully demonstrates the integration of semantic web technologies with modern cloud architecture to create an intelligent, context-aware phobia management system. The application meets all project requirements including RDF data modeling, SPARQL integration, context-aware alerts, and multi-device support.
+        </p>
+      </section>
+
+      <section id="future-work">
+        <h3>9.2 Future Enhancements</h3>
+        <ul>
+          <li><strong>Real Device Integration:</strong> Connect actual smartwatches via Web Bluetooth API</li>
+          <li><strong>Machine Learning:</strong> Predict phobia triggers based on historical patterns</li>
+          <li><strong>Gamification:</strong> Serious games for exposure therapy</li>
+          <li><strong>Social Features:</strong> Share progress with support groups</li>
+          <li><strong>Offline Support:</strong> Service workers for offline functionality</li>
+          <li><strong>Multi-language:</strong> Internationalization (i18n) support</li>
+          <li><strong>Advanced Analytics:</strong> Visualization of phobia patterns over time</li>
+        </ul>
+      </section>
+    </section>
+
+    <section id="references">
+      <h2>References</h2>
+      <ol>
+        <li>
+          <cite>DBpedia: A Large-scale, Multilingual Knowledge Base Extracted from Wikipedia</cite>
+          <a href="https://dbpedia.org">https://dbpedia.org</a>
+        </li>
+        <li>
+          <cite>Wikidata: A Free and Open Knowledge Base</cite>
+          <a href="https://www.wikidata.org">https://www.wikidata.org</a>
+        </li>
+        <li>
+          <cite>Schema.org: A Collaborative, Community Activity with a Mission to Create, Maintain, and Promote Schemas for Structured Data</cite>
+          <a href="https://schema.org">https://schema.org</a>
+        </li>
+        <li>
+          <cite>Open-Meteo: Open-Source Weather API</cite>
+          <a href="https://open-meteo.com">https://open-meteo.com</a>
+        </li>
+        <li>
+          <cite>OpenStreetMap Nominatim: Search and Reverse Geocoding</cite>
+          <a href="https://nominatim.openstreetmap.org">https://nominatim.openstreetmap.org</a>
+        </li>
+        <li>
+          <cite>AWS Lambda: Serverless Compute Service</cite>
+          <a href="https://aws.amazon.com/lambda/">https://aws.amazon.com/lambda/</a>
+        </li>
+        <li>
+          <cite>React: A JavaScript Library for Building User Interfaces</cite>
+          <a href="https://react.dev">https://react.dev</a>
+        </li>
+        <li>
+          <cite>RDFa 1.1 Primer - Third Edition</cite>
+          <a href="https://www.w3.org/TR/rdfa-primer/">https://www.w3.org/TR/rdfa-primer/</a>
+        </li>
+        <li>
+          <cite>SPARQL 1.1 Query Language</cite>
+          <a href="https://www.w3.org/TR/sparql11-query/">https://www.w3.org/TR/sparql11-query/</a>
+        </li>
+      </ol>
+    </section>
+
+    <section id="appendix">
+      <h2>Appendix</h2>
+      
+      <section id="source-code">
+        <h3>A. Source Code Repository</h3>
+        <p>
+          <a href="https://github.com/Oana-Florentina/pumpkin-PATCH">https://github.com/Oana-Florentina/pumpkin-PATCH</a>
+        </p>
+      </section>
+
+      <section id="demo">
+        <h3>B. Live Demo</h3>
+        <p>
+          [URL to be added after deployment]
+        </p>
+      </section>
+
+      <section id="team-contributions">
+        <h3>C. Team Contributions</h3>
+        <h4>Member 1: Briana-Stefania Maftei</h4>
+        <ul>
+          <li>Backend architecture and AWS deployment</li>
+          <li>Semantic web integration (RDF, SPARQL)</li>
+          <li>Authentication system (AWS Cognito)</li>
+          <li>DynamoDB database design and implementation</li>
+          <li>Backend API routes and microservices</li>
+          <li>Rule-based alert system logic</li>
+          <li>Context-aware alert implementation</li>
+        </ul>
+
+        <h4>Member 2: Oana-Florentina Dumitriu</h4>
+        <ul>
+          <li>Frontend development (React components)</li>
+          <li>Semantic web integration (RDF, SPARQL)</li>
+          <li>UI/UX design and responsive layout</li>
+          <li>Device simulation and monitoring</li>
+          <li>Dark mode and theme switching</li>
+          <li>API integrations (Open-Meteo, Nominatim, sunrise-sunset)</li>
+          <li>RDFa markup and Schema.org integration</li>
+          <li>Time-based and environmental services</li>
+        </ul>
+      </section>
+    </section>
+
+  </article>
+
+</body>
+</html>
