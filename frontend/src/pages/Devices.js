@@ -11,7 +11,7 @@ function Devices() {
 
   const [deviceData, setDeviceData] = useState({
     heartRate: 72,
-    location: { lat: 40.7128, lng: -74.0060, name: 'New York, NY' },
+    location: { lat: 40.7128, lng: -74.0060, name: 'New York, NY', type: 'Loading...', address: 'Loading...' },
     environmentalData: {
       roomSize: 'Medium (15m²)',
       altitude: '10m',
@@ -28,12 +28,19 @@ function Devices() {
       .then(loc => sendContext({ ...loc, timestamp: new Date().toISOString() }))
       .then(data => {
         const sunData = data.context.sun;
+        const locationData = data.context.location;
+        
         if (sunData) {
           const sunrise = new Date(sunData.sunrise);
           const sunset = new Date(sunData.sunset);
           
           setDeviceData(prev => ({
             ...prev,
+            location: {
+              ...prev.location,
+              type: locationData?.type || locationData?.category || 'Unknown',
+              address: locationData?.display_name || 'Unknown location'
+            },
             environmentalData: {
               ...prev.environmentalData,
               sunrise: sunrise.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
@@ -117,6 +124,7 @@ function Devices() {
               <div className="data-card">
                 <h3>📍 Location</h3>
                 <p className="data-value">{deviceData.location.name}</p>
+                <span className="data-status">{deviceData.location.type}</span>
               </div>
             </div>
           </div>
@@ -124,6 +132,10 @@ function Devices() {
           <div className="environmental-section">
             <h2>Environmental Context</h2>
             <div className="env-grid">
+              <div className="env-item">
+                <span className="env-label">📍 Address</span>
+                <span className="env-value">{deviceData.location.address}</span>
+              </div>
               <div className="env-item">
                 <span className="env-label">🏠 Room Size</span>
                 <span className="env-value">{deviceData.environmentalData.roomSize}</span>

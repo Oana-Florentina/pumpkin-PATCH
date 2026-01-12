@@ -1,21 +1,20 @@
 const axios = require('axios');
 
 const getWeatherData = async (latitude, longitude) => {
-  const apiKey = process.env.WEATHER_API_KEY;
-  if (!apiKey) {
-    console.warn('WEATHER_API_KEY not set');
-    return null;
-  }
-
   try {
-    const response = await axios.get(`http://api.weatherapi.com/v1/current.json`, {
-      params: { key: apiKey, q: `${latitude},${longitude}`, aqi: 'no' }
+    const response = await axios.get(`https://api.open-meteo.com/v1/forecast`, {
+      params: { 
+        latitude: latitude,
+        longitude: longitude,
+        current: 'temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,uv_index'
+      }
     });
-    return response.data;
+    return response.data.current;
   } catch (error) {
-    console.error('Weather API error:', error.message);
+    console.error('Open-Meteo API error:', error.message);
     return null;
   }
 };
 
 module.exports = { getWeatherData };
+
