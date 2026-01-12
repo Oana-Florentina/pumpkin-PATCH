@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -9,11 +9,53 @@ import Remedies from './pages/Remedies';
 import Alerts from './pages/Alerts';
 import Groups from './pages/Groups';
 import Devices from './pages/Devices';
+import { getUserLocation, sendContext } from './services/api';
 import './App.css';
 
 function App() {
   const [user, setUser] = useState(null);
   const [selectedPhobias, setSelectedPhobias] = useState([]);
+
+  // Test location on mount
+  useEffect(() => {
+    getUserLocation()
+      .then(loc => {
+        console.log('📍 Location:', loc);
+        return sendContext({ ...loc, timestamp: new Date().toISOString() });
+      })
+      .then(alerts => console.log('⚠️ Backend alerts:', alerts))
+      .catch(err => console.log('❌ Location error:', err.message));
+  }, []);
+
+  // Auto-adjust theme based on phobias
+  useEffect(() => {
+    if (selectedPhobias.length === 0) return;
+
+    // Check for dark-related phobias (nyctophobia)
+    const hasDarkPhobia = selectedPhobias.some(id => 
+      id === 'nyctophobia' || id === 9 // nyctophobia ID
+    );
+
+    // Check for light-related phobias (heliophobia, photophobia)
+    const hasLightPhobia = selectedPhobias.some(id => 
+      id === 'heliophobia' || id === 'photophobia' || id === 10 || id === 11
+    );
+
+    // If has both, don't change theme
+    if (hasDarkPhobia && hasLightPhobia) {
+      return;
+    }
+
+    // If has dark phobia, use light mode (remove dark mode)
+    if (hasDarkPhobia) {
+      document.body.classList.remove('dark-mode');
+    }
+
+    // If has light phobia, use dark mode
+    if (hasLightPhobia) {
+      document.body.classList.add('dark-mode');
+    }
+  }, [selectedPhobias]);
 
   return (
     <Router>

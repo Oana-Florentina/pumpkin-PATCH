@@ -18,3 +18,16 @@ export const sendContext = (ctx) => fetch(`${API}/api/context`, {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(ctx)
 }).then(r => r.json()).then(d => d.data.alerts);
+
+export const getUserLocation = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation not supported'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      (err) => reject(err)
+    );
+  });
+};
