@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchPhobias, fetchMyPhobias, addMyPhobia } from '../services/api';
-import { requestNotificationPermission } from '../services/notifications';
 
 function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   const navigate = useNavigate();
@@ -46,11 +45,6 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
 
   const handleViewRemedies = () => {
     navigate('/remedies');
-  };
-
-  const enableNotifications = async () => {
-    const sub = await requestNotificationPermission();
-    if (sub) alert('Notifications enabled! You will receive alerts.');
   };
 
   const filteredPhobias = phobias.filter(phobia =>
@@ -110,9 +104,6 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
             <div className="action-buttons">
               <button onClick={handleViewRemedies} className="btn-primary">
                 View Remedies & Resources →
-              </button>
-              <button onClick={enableNotifications} className="btn-secondary">
-                🔔 Enable Alerts
               </button>
             </div>
           </>
