@@ -11,8 +11,10 @@ export function login(email, password) {
     const user = new CognitoUser({ Username: email, Pool: userPool });
     user.authenticateUser(new AuthenticationDetails({ Username: email, Password: password }), {
       onSuccess: (result) => {
+        const userData = { email };
         localStorage.setItem('token', result.getAccessToken().getJwtToken());
-        resolve({ email });
+        localStorage.setItem('user', JSON.stringify(userData));
+        resolve(userData);
       },
       onFailure: reject
     });
@@ -31,7 +33,7 @@ export function register(email, password) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/x-amz-json-1.1',
-              'X-Amz-Target': 'AWSCognitoIdentityProviderService.AdminConfirmSignUp'
+              'X-Amz-Target': 'AWSCognitoIdentityProviderService.ConfirmSignUp'
             },
             body: JSON.stringify({
               UserPoolId: 'us-east-1_Cin2ct9cD',
@@ -48,4 +50,7 @@ export function register(email, password) {
 }
 
 export function getToken() { return localStorage.getItem('token'); }
-export function logout() { localStorage.removeItem('token'); }
+export function logout() { 
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+}

@@ -16,6 +16,15 @@ function App() {
   const [user, setUser] = useState(null);
   const [selectedPhobias, setSelectedPhobias] = useState([]);
 
+  // Check for existing session on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
   // Test location and weather
   useEffect(() => {
     getUserLocation()

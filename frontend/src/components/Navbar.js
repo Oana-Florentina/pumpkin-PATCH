@@ -44,7 +44,7 @@ function Navbar({ user, setUser }) {
             <button onClick={toggleDarkMode} className="btn-dark-mode" title="Toggle Dark Mode">
               {darkMode ? '☀️' : '🌙'}
             </button>
-            <span className="user-name">👤 {user.name}</span>
+            <span className="user-name">👤 {user?.email || 'User'}</span>
             <button onClick={handleLogout} className="btn-logout">Logout</button>
           </div>
         </div>
