@@ -1,0 +1,47 @@
+name: Deploy Sync Lambda
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/sync-phobias/**']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        working-directory: backend/sync-phobias
+        run: npm install --production
+      
+      - name: Create deployment package
+        working-directory: backend/sync-phobias
+        run: zip -r function.zip .
+      
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Deploy to Lambda
+        working-directory: backend/sync-phobias
+        run: |
+          aws lambda update-function-code \
+            --function-name phoa-sync-phobias \
+            --zip-file fileb://function.zip || \
+          aws lambda create-function \
+            --function-name phoa-sync-phobias \
+            --runtime nodejs18.x \
+            --role arn:aws:iam::984274379907:role/phoa-lambda-role \
+            --handler index.handler \
+            --zip-file fileb://function.zip \
+            --timeout 300 \
+            --memory-size 512

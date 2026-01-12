@@ -1,7 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getPhobiaFromWikidata, searchPhobiasInWikidata, getAllPhobiasFromWikidata } = require('../services/sparqlService');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
+const { getPhobiaFromWikidata, searchPhobiasInWikidata } = require('../services/sparqlService');
 const { phobiaToRdf, remedyToRdf } = require('../services/rdfService');
+
+const db = DynamoDBDocumentClient.from(new DynamoDBClient({ region: 'us-east-1' }));
+const TABLE = 'phoa-data';
 
 const phobias = [
   {
@@ -55,20 +60,27 @@ router.get('/', async (req, res) => {
       .catch(() => res.json({ success: true, data: [] }));
   }
   
-  // Returnează toate fobiile din Wikidata
+  // Citește din DynamoDB
   try {
-    const allPhobias = await getAllPhobiasFromWikidata();
+    const { Items } = await db.send(new ScanCommand({
+      TableName: TABLE,
+      FilterExpression: 'begins_with(PK, :pk)',
+      ExpressionAttributeValues: { ':pk': 'PHOBIA#' }
+    }));
+    
+    const phobias = Items || [];
     
     if (format === 'jsonld') {
       res.set('Content-Type', 'application/ld+json');
       return res.json({
-        '@context': { '@vocab': 'http://schema.org/', 'phoa': 'http://example.org/phoa#' },
-        '@graph': allPhobias.map(p => phobiaToRdf(p))
+        '@context': 'http://schema.org/',
+        '@graph': phobias
       });
     }
-    res.json({ success: true, data: allPhobias });
+    
+    res.json({ success: true, data: phobias });
   } catch (err) {
-    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed to fetch phobias' } });
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }
 });
 
