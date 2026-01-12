@@ -7,6 +7,104 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   background: #f5f5f5;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Dark Mode */
+body.dark-mode {
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+body.dark-mode .navbar {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+}
+
+body.dark-mode .page-container,
+body.dark-mode .my-phobias-section,
+body.dark-mode .available-phobias-section,
+body.dark-mode .feature-card,
+body.dark-mode .remedy-section,
+body.dark-mode .alert-card,
+body.dark-mode .device-card,
+body.dark-mode .member-card,
+body.dark-mode .auth-container,
+body.dark-mode .hero {
+  background: #2d3748;
+  color: #e0e0e0;
+}
+
+body.dark-mode .phobia-list-item,
+body.dark-mode .selected-phobia-item {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+body.dark-mode .phobia-list-item:hover {
+  border-color: #667eea;
+}
+
+body.dark-mode .phobia-list-item.selected {
+  background: #1e3a5f;
+  border-color: #667eea;
+}
+
+body.dark-mode .search-input,
+body.dark-mode .auth-form input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e0e0e0;
+}
+
+body.dark-mode .empty-state-box {
+  background: #374151;
+  color: #9ca3af;
+}
+
+body.dark-mode .context-display,
+body.dark-mode .alerts-section,
+body.dark-mode .device-data-section,
+body.dark-mode .environmental-section,
+body.dark-mode .device-info-box,
+body.dark-mode .add-member-section,
+body.dark-mode .members-section,
+body.dark-mode .group-alerts,
+body.dark-mode .data-card,
+body.dark-mode .env-item {
+  background: #2d3748;
+  color: #e0e0e0;
+}
+
+body.dark-mode .alert-card.success {
+  background: #1e4620;
+}
+
+body.dark-mode .alert-card.warning {
+  background: #4a3a1a;
+}
+
+body.dark-mode .alert-card.info {
+  background: #1a3a4a;
+}
+
+body.dark-mode .device-card.connected {
+  background: #1e4620;
+  border-color: #4caf50;
+}
+
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3 {
+  color: #f3f4f6;
+}
+
+body.dark-mode p {
+  color: #d1d5db;
+}
+
+body.dark-mode .context-info span,
+body.dark-mode .pagination-info {
+  color: #9ca3af;
 }
 
 .App {
@@ -101,6 +199,21 @@ body {
 }
 
 .btn-logout:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.btn-dark-mode {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: background 0.3s;
+}
+
+.btn-dark-mode:hover {
   background: rgba(255,255,255,0.3);
 }
 

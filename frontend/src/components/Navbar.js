@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 function Navbar({ user, setUser }) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
   const handleLogout = () => {
     setUser(null);
@@ -13,6 +14,11 @@ function Navbar({ user, setUser }) {
 
   const closeMenu = () => {
     setIsMenuOpen(false);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    document.body.classList.toggle('dark-mode');
   };
 
   return (
@@ -35,6 +41,9 @@ function Navbar({ user, setUser }) {
             <li><Link to="/groups" onClick={closeMenu}>Groups</Link></li>
           </ul>
           <div className="nav-user">
+            <button onClick={toggleDarkMode} className="btn-dark-mode" title="Toggle Dark Mode">
+              {darkMode ? '☀️' : '🌙'}
+            </button>
             <span className="user-name">👤 {user.name}</span>
             <button onClick={handleLogout} className="btn-logout">Logout</button>
           </div>
