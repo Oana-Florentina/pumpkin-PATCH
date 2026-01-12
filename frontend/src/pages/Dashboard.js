@@ -7,6 +7,8 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   const navigate = useNavigate();
   const [phobias, setPhobias] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const currentSeason = 'Spring';
   const currentDate = new Date().toLocaleDateString();
 
@@ -48,6 +50,17 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   );
 
   const mySelectedPhobias = phobias.filter(p => selectedPhobias.includes(p.id));
+
+  // Pagination
+  const totalPages = Math.ceil(filteredPhobias.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPhobias = filteredPhobias.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <div className="page-container" vocab="http://schema.org/">
@@ -111,7 +124,7 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
         </div>
 
         <div className="phobia-list">
-          {filteredPhobias.map(phobia => (
+          {currentPhobias.map(phobia => (
             <div 
               key={phobia.id} 
               className={`phobia-list-item ${selectedPhobias.includes(phobia.id) ? 'selected' : ''}`}
@@ -137,6 +150,29 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
         {filteredPhobias.length === 0 && (
           <div className="empty-state-box">
             <p>No phobias found matching "{searchTerm}"</p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="pagination-btn"
+            >
+              ← Previous
+            </button>
+            <span className="pagination-info">
+              Page {currentPage} of {totalPages} ({filteredPhobias.length} phobias)
+            </span>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="pagination-btn"
+            >
+              Next →
+            </button>
           </div>
         )}
       </div>
