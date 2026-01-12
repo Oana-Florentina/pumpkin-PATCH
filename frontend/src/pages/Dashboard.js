@@ -11,20 +11,17 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   const currentDate = new Date().toLocaleDateString();
 
   useEffect(() => {
-    fetchPhobias().then(setPhobias).catch(err => {
-      console.error('Failed to fetch phobias:', err);
-      // Fallback to mock data if API fails
-      setPhobias([
-        { id: 1, name: 'Arachnophobia', description: 'Fear of spiders', trigger: 'presence', code: 'D001238' },
-        { id: 2, name: 'Claustrophobia', description: 'Fear of enclosed spaces', trigger: 'location', code: 'D003027' },
-        { id: 3, name: 'Acrophobia', description: 'Fear of heights', trigger: 'location', code: 'D000342' },
-        { id: 4, name: 'Social Phobia', description: 'Fear of social situations', trigger: 'context', code: 'D012698' },
-        { id: 5, name: 'Agoraphobia', description: 'Fear of open spaces', trigger: 'location', code: 'D000379' },
-        { id: 6, name: 'Pollen Allergy', description: 'Allergic to pollen', trigger: 'seasonal', code: 'D006255' },
-        { id: 7, name: 'Aerophobia', description: 'Fear of flying', trigger: 'context', code: 'D005239' },
-        { id: 8, name: 'Cynophobia', description: 'Fear of dogs', trigger: 'presence', code: 'D010698' }
-      ]);
-    });
+    fetchPhobias()
+      .then(data => {
+        // Sortează: 1. cu imagine primele, 2. alfabetic
+        const sorted = data.sort((a, b) => {
+          if (a.image && !b.image) return -1;
+          if (!a.image && b.image) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        setPhobias(sorted);
+      })
+      .catch(err => console.error('Failed to fetch phobias:', err));
   }, []);
 
   const togglePhobia = (phobiaId) => {
@@ -62,13 +59,26 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
             typeof="MedicalCondition"
             resource={`#phobia-${phobia.id}`}
           >
-            {phobia.image && (
+            {phobia.image ? (
               <img 
                 src={phobia.image} 
                 alt={phobia.name}
                 property="image"
                 style={{width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px 8px 0 0'}}
               />
+            ) : (
+              <div style={{
+                width: '100%', 
+                height: '150px', 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px 8px 0 0',
+                fontSize: '48px'
+              }}>
+                🧠
+              </div>
             )}
             <div onClick={() => togglePhobia(phobia.id)} style={{padding: '15px'}}>
               <h3 property="name">{phobia.name}</h3>

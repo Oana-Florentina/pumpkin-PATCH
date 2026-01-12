@@ -1,37 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-const REMEDIES = {
-  1: { // Arachnophobia
-    medications: [
-      { name: 'Propranolol', source: 'DBpedia', url: 'http://dbpedia.org/resource/Propranolol' },
-      { name: 'Benzodiazepines', source: 'Wikidata', url: 'https://www.wikidata.org/wiki/Q407972' }
-    ],
-    exercises: ['Exposure therapy', 'Cognitive behavioral therapy', 'Relaxation techniques'],
-    games: ['Spider Phobia VR', 'Fearless - Exposure Game'],
-    resources: ['https://www.apa.org/phobias', 'https://www.nimh.nih.gov/anxiety']
-  },
-  2: { // Claustrophobia
-    medications: [
-      { name: 'SSRIs', source: 'DBpedia', url: 'http://dbpedia.org/resource/Selective_serotonin_reuptake_inhibitor' },
-      { name: 'Anti-anxiety medication', source: 'Wikidata', url: 'https://www.wikidata.org/wiki/Q1360' }
-    ],
-    exercises: ['Breathing exercises', 'Progressive muscle relaxation', 'Gradual exposure'],
-    games: ['Claustrophobia VR Therapy', 'Mindfulness Space'],
-    resources: ['https://www.anxietycentre.com', 'https://www.verywellmind.com']
-  },
-  6: { // Pollen Allergy
-    medications: [
-      { name: 'Antihistamines', source: 'DBpedia', url: 'http://dbpedia.org/resource/Antihistamine' },
-      { name: 'Nasal corticosteroids', source: 'Wikidata', url: 'https://www.wikidata.org/wiki/Q422248' },
-      { name: 'Cetirizine', source: 'DBpedia', url: 'http://dbpedia.org/resource/Cetirizine' }
-    ],
-    exercises: ['Indoor exercises during high pollen', 'Air purifier usage', 'Nasal irrigation'],
-    games: ['Allergy Tracker App', 'Pollen Alert Game'],
-    resources: ['https://www.aaaai.org', 'https://www.pollen.com']
-  }
-};
+const API = 'https://x7v2x7sgsg.execute-api.us-east-1.amazonaws.com';
 
 function Remedies({ selectedPhobias }) {
+  const [phobias, setPhobias] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (selectedPhobias.length > 0) {
+      fetchPhobiasDetails();
+    }
+  }, [selectedPhobias]);
+
+  const fetchPhobiasDetails = async () => {
+    try {
+      const res = await fetch(`${API}/api/phobias`);
+      const data = await res.json();
+      if (data.success) {
+        const selected = data.data.filter(p => selectedPhobias.includes(p.id));
+        setPhobias(selected);
+      }
+    } catch (err) {
+      console.error('Failed to fetch:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (selectedPhobias.length === 0) {
     return (
       <div className="page-container">
@@ -41,65 +36,50 @@ function Remedies({ selectedPhobias }) {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="page-container">
+        <h1>Loading remedies...</h1>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container" vocab="http://schema.org/">
-      <h1 property="name">Remedies & Resources</h1>
-      <p className="subtitle">Based on your selected phobias (Data from DBpedia & Wikidata)</p>
+      <h1>Remedies & Resources</h1>
+      <p className="subtitle">Evidence-based treatments from NHS, medical databases, and support communities</p>
 
-      {selectedPhobias.map(phobiaId => {
-        const remedy = REMEDIES[phobiaId];
-        if (!remedy) return null;
+      {phobias.map(phobia => (
+        <div key={phobia.id} className="remedy-section" typeof="MedicalCondition">
+          <h2 property="name">{phobia.name}</h2>
+          <p property="description">{phobia.description}</p>
 
-        return (
-          <div key={phobiaId} className="remedy-section" typeof="MedicalTherapy">
-            <h2 property="name">Treatment Options</h2>
-            
-            <div className="remedy-category">
-              <h3>💊 Medications</h3>
-              <ul>
-                {remedy.medications.map((med, i) => (
-                  <li key={i} typeof="Drug" property="drug">
-                    <a href={med.url} target="_blank" rel="noopener noreferrer" property="url">
-                      <span property="name">{med.name}</span>
+          {phobia.possibleTreatment && phobia.possibleTreatment.length > 0 && (
+            <div className="treatments-container">
+              <h3>Recommended Treatments:</h3>
+              {phobia.possibleTreatment.map((treatment, i) => (
+                <div key={i} className="treatment-card" typeof={treatment['@type']}>
+                  <h4 property="name">{treatment.name}</h4>
+                  {treatment.description && (
+                    <p property="description">{treatment.description}</p>
+                  )}
+                  {treatment.url && (
+                    <a 
+                      href={treatment.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      property="url"
+                      className="btn-secondary"
+                    >
+                      Visit Resource →
                     </a>
-                    <span> ({med.source})</span>
-                    <meta property="source" content={med.source} />
-                  </li>
-                ))}
-              </ul>
+                  )}
+                </div>
+              ))}
             </div>
-
-            <div className="remedy-category">
-              <h3>🧘 Exercises & Therapy</h3>
-              <ul typeof="TherapeuticProcedure">
-                {remedy.exercises.map((ex, i) => (
-                  <li key={i} property="procedureType">{ex}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="remedy-category">
-              <h3>🎮 Serious Games & Apps</h3>
-              <ul typeof="SoftwareApplication">
-                {remedy.games.map((game, i) => (
-                  <li key={i} property="name">{game}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="remedy-category">
-              <h3>🌐 Web Resources</h3>
-              <ul>
-                {remedy.resources.map((link, i) => (
-                  <li key={i}>
-                    <a href={link} target="_blank" rel="noopener noreferrer" property="url">{link}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        );
-      })}
+          )}
+        </div>
+      ))}
     </div>
   );
 }
