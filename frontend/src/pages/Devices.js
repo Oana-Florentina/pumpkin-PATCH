@@ -11,8 +11,6 @@ function Devices() {
   const [deviceData, setDeviceData] = useState({
     heartRate: 72,
     location: { lat: 40.7128, lng: -74.0060, name: 'New York, NY' },
-    activity: 'Resting',
-    stressLevel: 'Low',
     environmentalData: {
       roomSize: 'Medium (15m²)',
       altitude: '10m',
@@ -21,7 +19,6 @@ function Devices() {
     }
   });
 
-  // Simulate real-time heart rate updates
   useEffect(() => {
     const interval = setInterval(() => {
       setDeviceData(prev => ({
@@ -50,7 +47,7 @@ function Devices() {
   return (
     <div className="page-container" vocab="http://schema.org/">
       <h1>Connected Devices</h1>
-      <p className="subtitle">Manage wearable devices for real-time phobia monitoring</p>
+      <p className="subtitle">Manage wearable devices for phobia monitoring</p>
 
       <div className="devices-section">
         <h2>Available Devices</h2>
@@ -83,30 +80,16 @@ function Devices() {
       {connectedDevice && (
         <>
           <div className="device-data-section">
-            <h2>Real-Time Health Data</h2>
+            <h2>Health Monitoring</h2>
             <div className="data-grid">
               <div className="data-card" typeof="MedicalObservation">
                 <h3>❤️ Heart Rate</h3>
                 <p className="data-value" property="value">{deviceData.heartRate} BPM</p>
-                <span className="data-status">Normal</span>
               </div>
 
               <div className="data-card">
                 <h3>📍 Location</h3>
                 <p className="data-value">{deviceData.location.name}</p>
-                <span className="data-status">Tracking</span>
-              </div>
-
-              <div className="data-card">
-                <h3>🏃 Activity</h3>
-                <p className="data-value">{deviceData.activity}</p>
-                <span className="data-status">Monitored</span>
-              </div>
-
-              <div className="data-card">
-                <h3>😌 Stress Level</h3>
-                <p className="data-value">{deviceData.stressLevel}</p>
-                <span className="data-status">Good</span>
               </div>
             </div>
           </div>
@@ -115,19 +98,19 @@ function Devices() {
             <h2>Environmental Context</h2>
             <div className="env-grid">
               <div className="env-item">
-                <span className="env-label">Room Size:</span>
+                <span className="env-label">🏠 Room Size</span>
                 <span className="env-value">{deviceData.environmentalData.roomSize}</span>
               </div>
               <div className="env-item">
-                <span className="env-label">Altitude:</span>
+                <span className="env-label">⛰️ Altitude</span>
                 <span className="env-value">{deviceData.environmentalData.altitude}</span>
               </div>
               <div className="env-item">
-                <span className="env-label">Temperature:</span>
+                <span className="env-label">🌡️ Temperature</span>
                 <span className="env-value">{deviceData.environmentalData.temperature}</span>
               </div>
               <div className="env-item">
-                <span className="env-label">Noise Level:</span>
+                <span className="env-label">🔊 Noise Level</span>
                 <span className="env-value">{deviceData.environmentalData.noiseLevel}</span>
               </div>
             </div>
