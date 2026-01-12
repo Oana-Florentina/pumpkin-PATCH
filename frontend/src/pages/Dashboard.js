@@ -8,11 +8,13 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   const [phobias, setPhobias] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const itemsPerPage = 10;
   const currentSeason = 'Spring';
   const currentDate = new Date().toLocaleDateString();
 
   useEffect(() => {
+    setLoading(true);
     fetchPhobias()
       .then(data => {
         const withDesc = data.filter(p => p.description && p.description !== 'No description available');
@@ -24,7 +26,8 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
         });
         setPhobias(sorted);
       })
-      .catch(err => console.error('Failed to fetch phobias:', err));
+      .catch(err => console.error('Failed to fetch phobias:', err))
+      .finally(() => setLoading(false));
   }, []);
 
   const togglePhobia = (phobiaId) => {
@@ -120,60 +123,70 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
+            disabled={loading}
           />
         </div>
 
-        <div className="phobia-list">
-          {currentPhobias.map(phobia => (
-            <div 
-              key={phobia.id} 
-              className={`phobia-list-item ${selectedPhobias.includes(phobia.id) ? 'selected' : ''}`}
-              vocab="http://schema.org/"
-              typeof="MedicalCondition"
-              resource={`#phobia-${phobia.id}`}
-              onClick={() => togglePhobia(phobia.id)}
-            >
-              <div className="phobia-list-content">
-                <div className="phobia-list-info">
-                  <h3 property="name">{phobia.name}</h3>
-                  <p property="description">{phobia.description}</p>
-                  {phobia.trigger && <span className="trigger-badge">{phobia.trigger}</span>}
+        {loading ? (
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Loading phobias...</p>
+          </div>
+        ) : (
+          <>
+            <div className="phobia-list">
+              {currentPhobias.map(phobia => (
+                <div 
+                  key={phobia.id} 
+                  className={`phobia-list-item ${selectedPhobias.includes(phobia.id) ? 'selected' : ''}`}
+                  vocab="http://schema.org/"
+                  typeof="MedicalCondition"
+                  resource={`#phobia-${phobia.id}`}
+                  onClick={() => togglePhobia(phobia.id)}
+                >
+                  <div className="phobia-list-content">
+                    <div className="phobia-list-info">
+                      <h3 property="name">{phobia.name}</h3>
+                      <p property="description">{phobia.description}</p>
+                      {phobia.trigger && <span className="trigger-badge">{phobia.trigger}</span>}
+                    </div>
+                    <div className="phobia-list-checkbox">
+                      {selectedPhobias.includes(phobia.id) ? '✓' : '+'}
+                    </div>
+                  </div>
                 </div>
-                <div className="phobia-list-checkbox">
-                  {selectedPhobias.includes(phobia.id) ? '✓' : '+'}
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {filteredPhobias.length === 0 && (
-          <div className="empty-state-box">
-            <p>No phobias found matching "{searchTerm}"</p>
-          </div>
-        )}
+            {filteredPhobias.length === 0 && (
+              <div className="empty-state-box">
+                <p>No phobias found matching "{searchTerm}"</p>
+              </div>
+            )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="pagination-btn"
-            >
-              ← Previous
-            </button>
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages} ({filteredPhobias.length} phobias)
-            </span>
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="pagination-btn"
-            >
-              Next →
-            </button>
-          </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="pagination-btn"
+                >
+                  ← Previous
+                </button>
+                <span className="pagination-info">
+                  Page {currentPage} of {totalPages} ({filteredPhobias.length} phobias)
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
