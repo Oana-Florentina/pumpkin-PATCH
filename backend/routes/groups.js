@@ -53,6 +53,26 @@ router.post('/:id/report', authMiddleware, async (req, res) => {
   if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
   if (!group.members.includes(req.userId)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
   
+  // Verifică care membri au fobii cu acest trigger
+  const { getUserPhobias } = require('../services/dbService');
+  const { ScanCommand } = require('@aws-sdk/lib-dynamodb');
+  
+  let affectedCount = 0;
+  for (const memberId of group.members) {
+    const userPhobias = await getUserPhobias(memberId);
+    // Verifică dacă vreuna din fobiile userului are trigger-ul raportat
+    const { Items } = await db.send(new ScanCommand({
+      TableName: TABLE,
+      FilterExpression: 'begins_with(PK, :pk) AND contains(#t, :trigger)',
+      ExpressionAttributeNames: { '#t': 'trigger' },
+      ExpressionAttributeValues: { ':pk': 'PHOBIA#', ':trigger': trigger.toLowerCase() }
+    }));
+    
+    if (Items && Items.length > 0 && userPhobias.length > 0) {
+      affectedCount++;
+    }
+  }
+  
   // Salvează raportul
   await db.send(new PutCommand({
     TableName: TABLE,
@@ -61,11 +81,12 @@ router.post('/:id/report', authMiddleware, async (req, res) => {
       SK: `REPORT#${Date.now()}`,
       trigger,
       reportedBy: req.userId,
+      affectedMembers: affectedCount,
       timestamp: new Date().toISOString()
     }
   }));
   
-  res.json({ success: true, data: { message: 'Trigger reported to group members' } });
+  res.json({ success: true, data: { message: 'Trigger reported', affectedMembers: affectedCount } });
 });
 
 module.exports = router;
