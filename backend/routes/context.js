@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { alertToRdf } = require('../services/rdfService');
 const { getTimeBasedAlerts, getSeasonName, getTimeOfDay } = require('../services/timeService');
+const { getWeatherData } = require('../services/weatherService');
 
 // Reguli simple pentru alerte (vor fi înlocuite cu Apache Jena)
 const rules = [
@@ -62,6 +63,12 @@ router.post('/', async (req, res) => {
       createdAt: alert.timestamp
     });
   });
+
+  // Get weather data
+  if (latitude && longitude) {
+    const weatherData = await getWeatherData(latitude, longitude);
+    context.weather = weatherData;
+  }
 
   if (req.query.format === 'jsonld') {
     res.set('Content-Type', 'application/ld+json');

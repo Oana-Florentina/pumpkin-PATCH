@@ -17,7 +17,12 @@ export const sendContext = (ctx) => fetch(`${API}/api/context`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(ctx)
-}).then(r => r.json()).then(d => d.data.alerts);
+}).then(r => r.json()).then(d => {
+  console.log('📍 Position:', ctx);
+  console.log('📦 Full response:', d);
+  console.log('🌤️ Weather data:', d.data.context.weather);
+  return d.data.alerts;
+});
 
 export const getUserLocation = () => {
   return new Promise((resolve, reject) => {

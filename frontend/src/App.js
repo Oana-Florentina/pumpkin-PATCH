@@ -16,15 +16,11 @@ function App() {
   const [user, setUser] = useState(null);
   const [selectedPhobias, setSelectedPhobias] = useState([]);
 
-  // Test location on mount
+  // Test location and weather
   useEffect(() => {
     getUserLocation()
-      .then(loc => {
-        console.log('📍 Location:', loc);
-        return sendContext({ ...loc, timestamp: new Date().toISOString() });
-      })
-      .then(alerts => console.log('⚠️ Backend alerts:', alerts))
-      .catch(err => console.log('❌ Location error:', err.message));
+      .then(loc => sendContext({ ...loc, timestamp: new Date().toISOString() }))
+      .catch(err => console.log('❌ Error:', err.message));
   }, []);
 
   // Auto-adjust theme based on phobias
