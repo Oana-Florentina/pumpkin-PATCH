@@ -12,10 +12,13 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   useEffect(() => {
     fetchPhobias()
       .then(data => {
-        // Sortează după completitudine (mai multe proprietăți = mai sus)
-        const sorted = data.sort((a, b) => {
-          const scoreA = [a.image, a.nhsUrl, a.subreddit, a.trigger, a.description !== 'No description available'].filter(Boolean).length;
-          const scoreB = [b.image, b.nhsUrl, b.subreddit, b.trigger, b.description !== 'No description available'].filter(Boolean).length;
+        // Filtrează doar cu descriere validă
+        const withDesc = data.filter(p => p.description && p.description !== 'No description available');
+        
+        // Sortează după completitudine
+        const sorted = withDesc.sort((a, b) => {
+          const scoreA = [a.image, a.nhsUrl, a.subreddit, a.trigger].filter(Boolean).length;
+          const scoreB = [b.image, b.nhsUrl, b.subreddit, b.trigger].filter(Boolean).length;
           if (scoreA !== scoreB) return scoreB - scoreA;
           return a.name.localeCompare(b.name);
         });
