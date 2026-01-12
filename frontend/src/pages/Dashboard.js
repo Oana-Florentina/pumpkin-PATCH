@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { fetchPhobias } from '../services/api';
+import { requestNotificationPermission } from '../services/notifications';
 
 function Dashboard({ selectedPhobias, setSelectedPhobias }) {
   const navigate = useNavigate();
@@ -37,6 +38,11 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
 
   const handleViewRemedies = () => {
     navigate('/remedies');
+  };
+
+  const enableNotifications = async () => {
+    const sub = await requestNotificationPermission();
+    if (sub) alert('Notifications enabled! You will receive alerts.');
   };
 
   const generatePhobiaURL = (phobia) => {
@@ -97,6 +103,9 @@ function Dashboard({ selectedPhobias, setSelectedPhobias }) {
           <p>Selected {selectedPhobias.length} phobia(s)</p>
           <button onClick={handleViewRemedies} className="btn-primary">
             View Remedies & Resources
+          </button>
+          <button onClick={enableNotifications} className="btn-secondary" style={{marginLeft: '10px'}}>
+            🔔 Enable Alerts
           </button>
         </div>
       )}

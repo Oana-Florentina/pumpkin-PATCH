@@ -26,10 +26,12 @@ async function getPhobiaFromWikidata(wikidataId) {
 
 async function getAllPhobiasFromWikidata() {
   const query = `
-    SELECT ?phobia ?label ?description WHERE {
+    SELECT ?phobia ?label ?description ?image ?nhsId WHERE {
       ?phobia wdt:P279* wd:Q175854 .
       ?phobia rdfs:label ?label .
       OPTIONAL { ?phobia schema:description ?description . FILTER(LANG(?description) = "en") }
+      OPTIONAL { ?phobia wdt:P18 ?image }
+      OPTIONAL { ?phobia wdt:P7807 ?nhsId }
       FILTER(LANG(?label) = "en")
     }
   `;
@@ -41,7 +43,9 @@ async function getAllPhobiasFromWikidata() {
     id: b.phobia.value.split('/').pop(),
     name: b.label.value || 'Unknown',
     description: b.description?.value || 'No description available',
-    wikidataUrl: b.phobia.value
+    wikidataUrl: b.phobia.value,
+    image: b.image?.value || null,
+    nhsUrl: b.nhsId?.value ? `https://www.nhs.uk/conditions/${b.nhsId.value}/` : null
   }));
 }
 

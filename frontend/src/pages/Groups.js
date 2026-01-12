@@ -9,6 +9,7 @@ function Groups() {
   const [newGroupName, setNewGroupName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [showQR, setShowQR] = useState(null);
+  const [reportTrigger, setReportTrigger] = useState('');
 
   useEffect(() => {
     fetchMyGroups();
@@ -89,6 +90,28 @@ function Groups() {
     setTimeout(() => setCopiedGroup(null), 2000);
   };
 
+  const handleReportTrigger = async (groupId) => {
+    if (!reportTrigger) return alert('Please enter a trigger');
+    
+    try {
+      const res = await fetch(`${API}/api/groups/${groupId}/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
+        body: JSON.stringify({ trigger: reportTrigger })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Alert sent to group members!');
+        setReportTrigger('');
+      }
+    } catch (err) {
+      alert('Failed to report: ' + err.message);
+    }
+  };
+
   return (
     <div className="page-container">
       <h1>Group Management</h1>
@@ -106,6 +129,25 @@ function Groups() {
           />
           <button type="submit" className="btn-primary">Create Group</button>
         </form>
+      </div>
+
+      <div className="add-member-section">
+        <h2>Report Trigger to Group</h2>
+        <p style={{fontSize: '14px', color: '#666', marginBottom: '10px'}}>
+          Alert group members about potential triggers (e.g., "spider", "small room", "dog")
+        </p>
+        <div className="add-member-form" style={{display: 'flex', gap: '10px'}}>
+          <input
+            type="text"
+            placeholder="Trigger (e.g., spider, confined space)"
+            value={reportTrigger}
+            onChange={(e) => setReportTrigger(e.target.value)}
+          />
+          <select onChange={(e) => e.target.value && handleReportTrigger(e.target.value)} className="btn-primary">
+            <option value="">Select Group</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </div>
       </div>
 
       <div className="add-member-section">
