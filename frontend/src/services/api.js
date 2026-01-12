@@ -21,7 +21,8 @@ export const sendContext = (ctx) => fetch(`${API}/api/context`, {
   console.log('📍 Position:', ctx);
   console.log('📦 Full response:', d);
   console.log('🌤️ Weather data:', d.data.context.weather);
-  return d.data.alerts;
+  console.log('🌅 Sunrise/Sunset data:', d.data.context.sun);
+  return d.data;
 });
 
 export const getUserLocation = () => {

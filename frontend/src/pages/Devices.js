@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getHeartbeat, getAltitude, getNoiseLevel, getRoomSize } from '../services/deviceSimulator';
+import { getUserLocation, sendContext } from '../services/api';
 
 function Devices() {
   const [devices, setDevices] = useState([
@@ -15,9 +16,34 @@ function Devices() {
       roomSize: 'Medium (15m²)',
       altitude: '10m',
       temperature: '22°C',
-      noiseLevel: '45dB'
+      noiseLevel: '45dB',
+      sunrise: 'Loading...',
+      sunset: 'Loading...'
     }
   });
+
+  // Fetch sunrise/sunset data
+  useEffect(() => {
+    getUserLocation()
+      .then(loc => sendContext({ ...loc, timestamp: new Date().toISOString() }))
+      .then(data => {
+        const sunData = data.context.sun;
+        if (sunData) {
+          const sunrise = new Date(sunData.sunrise);
+          const sunset = new Date(sunData.sunset);
+          
+          setDeviceData(prev => ({
+            ...prev,
+            environmentalData: {
+              ...prev.environmentalData,
+              sunrise: sunrise.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              sunset: sunset.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+            }
+          }));
+        }
+      })
+      .catch(err => console.log('Location error:', err.message));
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -113,6 +139,14 @@ function Devices() {
               <div className="env-item">
                 <span className="env-label">🔊 Noise Level</span>
                 <span className="env-value">{deviceData.environmentalData.noiseLevel}</span>
+              </div>
+              <div className="env-item">
+                <span className="env-label">🌅 Sunrise</span>
+                <span className="env-value">{deviceData.environmentalData.sunrise}</span>
+              </div>
+              <div className="env-item">
+                <span className="env-label">🌇 Sunset</span>
+                <span className="env-value">{deviceData.environmentalData.sunset}</span>
               </div>
             </div>
             <p className="env-note">
