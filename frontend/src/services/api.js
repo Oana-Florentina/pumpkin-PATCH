@@ -17,7 +17,10 @@ export const sendContext = (ctx) => fetch(`${API}/api/context`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(ctx)
-}).then(r => r.json()).then(d => d.data);
+}).then(r => r.json()).then(d => {
+  console.log('📍 Context:', d.data);
+  return d.data;
+});
 
 export const getAlerts = (phobias, context, groupMessages = []) => fetch(`${API}/api/alerts`, {
   method: 'POST',
