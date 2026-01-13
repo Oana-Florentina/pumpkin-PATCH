@@ -1,0 +1,44 @@
+name: Deploy Rules Engine
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/rules-engine-java/**']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '11'
+      
+      - name: Build with Maven
+        working-directory: backend/rules-engine-java
+        run: mvn clean package -q
+      
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Deploy to Lambda
+        working-directory: backend/rules-engine-java
+        run: |
+          aws lambda update-function-code \
+            --function-name phoa-rules-engine \
+            --zip-file fileb://target/rules-engine-1.0.jar || \
+          aws lambda create-function \
+            --function-name phoa-rules-engine \
+            --runtime java11 \
+            --role arn:aws:iam::984274379907:role/phoa-lambda-role \
+            --handler com.phoa.rules.RulesHandler::handleRequest \
+            --zip-file fileb://target/rules-engine-1.0.jar \
+            --timeout 30 \
+            --memory-size 512

@@ -6,10 +6,14 @@ const getWeatherData = async (latitude, longitude) => {
       params: { 
         latitude: latitude,
         longitude: longitude,
-        current: 'temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,uv_index,weather_code'
+        current: 'temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,uv_index,weather_code',
+        elevation: true
       }
     });
-    return response.data.current;
+    return {
+      ...response.data.current,
+      elevation: response.data.elevation
+    };
   } catch (error) {
     console.error('Open-Meteo API error:', error.message);
     return null;

@@ -2,104 +2,128 @@ package com.phoa.rules;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.google.gson.Gson;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.*;
+import software.amazon.awssdk.regions.Region;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.reasoner.*;
 import org.apache.jena.reasoner.rulesys.*;
+import org.apache.jena.reasoner.*;
 import java.util.*;
 
 public class RulesHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
     
-    private static final String PHOA_NS = "http://example.org/phoa#";
-    private static final Gson gson = new Gson();
-    
+    private static final String PHOA = "http://example.org/phoa#";
+    private static final DynamoDbClient ddb = DynamoDbClient.builder()
+            .region(Region.US_EAST_1).build();
+
     @Override
-    public Map<String, Object> handleRequest(Map<String, Object> input, Context context) {
-        try {
-            String userId = (String) input.get("userId");
-            Map<String, Object> ctx = (Map<String, Object>) input.get("context");
-            List<String> userPhobias = (List<String>) input.get("phobias");
-            
-            Model model = ModelFactory.createDefaultModel();
-            Resource user = model.createResource(PHOA_NS + "user/" + userId);
-            
-            // Adaugă fobiile userului
-            for (String phobia : userPhobias) {
-                user.addProperty(model.createProperty(PHOA_NS + "hasPhobia"), 
-                                model.createResource(PHOA_NS + phobia));
+    public Map<String, Object> handleRequest(Map<String, Object> input, Context ctx) {
+        List<String> userPhobias = (List<String>) input.get("phobias");
+        Map<String, Object> sensors = (Map<String, Object>) input.get("context");
+        List<Map<String, String>> groupMsgs = (List<Map<String, String>>) 
+            input.getOrDefault("groupMessages", new ArrayList<>());
+        
+        List<Map<String, AttributeValue>> dbRules = ddb.scan(
+            ScanRequest.builder().tableName("phoa-triggers").build()
+        ).items();
+        
+        Model model = ModelFactory.createDefaultModel();
+        Resource user = model.createResource(PHOA + "currentUser");
+        Resource context = model.createResource(PHOA + "currentContext");
+        
+        for (String phobiaId : userPhobias) {
+            user.addProperty(model.createProperty(PHOA + "hasPhobia"), phobiaId);
+        }
+        
+        sensors.forEach((name, value) -> {
+            if (value instanceof Number) {
+                context.addLiteral(model.createProperty(PHOA + name), ((Number) value).doubleValue());
+            } else if (value instanceof Boolean) {
+                context.addLiteral(model.createProperty(PHOA + name), (Boolean) value);
+            } else {
+                context.addProperty(model.createProperty(PHOA + name), value.toString().toLowerCase());
             }
+        });
+        
+        StringBuilder allMessages = new StringBuilder();
+        groupMsgs.forEach(msg -> allMessages.append(msg.getOrDefault("text", "").toLowerCase()).append(" "));
+        context.addProperty(model.createProperty(PHOA + "groupText"), allMessages.toString());
+        
+        List<Rule> jenaRules = new ArrayList<>();
+        
+        for (Map<String, AttributeValue> dbRule : dbRules) {
+            String phobiaId = dbRule.get("phobiaId").s();
+            String mainTrigger = dbRule.containsKey("mainTrigger") ? dbRule.get("mainTrigger").s().toLowerCase() : "";
+            List<AttributeValue> sensorRules = dbRule.get("sensorRules").l();
             
-            // Adaugă contextul
-            Resource contextRes = model.createResource(PHOA_NS + "context");
-            if (ctx.containsKey("season")) {
-                contextRes.addProperty(model.createProperty(PHOA_NS + "season"), 
-                                      ctx.get("season").toString());
-            }
-            if (ctx.containsKey("roomSize")) {
-                contextRes.addProperty(model.createProperty(PHOA_NS + "roomSize"), 
-                                      ctx.get("roomSize").toString());
-            }
-            if (ctx.containsKey("pollenLevel")) {
-                contextRes.addProperty(model.createProperty(PHOA_NS + "pollenLevel"), 
-                                      ctx.get("pollenLevel").toString());
-            }
+            StringBuilder ruleStr = new StringBuilder();
+            ruleStr.append(String.format("(?u <%shasPhobia> '%s') ", PHOA, phobiaId));
             
-            // Definește regulile Jena
-            String rules = 
-                "[rule1: (?user <" + PHOA_NS + "hasPhobia> <" + PHOA_NS + "pollenAllergy>) " +
-                "       (?ctx <" + PHOA_NS + "season> 'Spring') " +
-                "       (?ctx <" + PHOA_NS + "pollenLevel> 'High') " +
-                "       -> (?user <" + PHOA_NS + "needsAlert> <" + PHOA_NS + "PollenAlert>)] " +
+            for (AttributeValue ruleAttr : sensorRules) {
+                Map<String, AttributeValue> sr = ruleAttr.m();
+                String name = sr.get("name").s();
+                AttributeValue val = sr.get("value");
                 
-                "[rule2: (?user <" + PHOA_NS + "hasPhobia> <" + PHOA_NS + "claustrophobia>) " +
-                "       (?ctx <" + PHOA_NS + "roomSize> 'Small') " +
-                "       -> (?user <" + PHOA_NS + "needsAlert> <" + PHOA_NS + "ConfinedSpaceAlert>)]";
-            
-            Reasoner reasoner = new GenericRuleReasoner(Rule.parseRules(rules));
-            InfModel inf = ModelFactory.createInfModel(reasoner, model);
-            
-            // Extrage alertele
-            List<Map<String, Object>> alerts = new ArrayList<>();
-            Property needsAlert = model.createProperty(PHOA_NS + "needsAlert");
-            StmtIterator iter = inf.listStatements(user, needsAlert, (RDFNode) null);
-            
-            while (iter.hasNext()) {
-                Statement stmt = iter.nextStatement();
-                String alertType = stmt.getObject().toString();
+                if (val.nul() != null && val.nul()) continue;
                 
-                if (alertType.contains("PollenAlert")) {
-                    alerts.add(createAlert("pollenAllergy", "high", 
-                        "High pollen levels detected in Spring",
-                        Arrays.asList("Stay indoors", "Take antihistamine")));
-                } else if (alertType.contains("ConfinedSpaceAlert")) {
-                    alerts.add(createAlert("claustrophobia", "medium",
-                        "You are in a confined space",
-                        Arrays.asList("Practice deep breathing", "Focus on exit points")));
+                if (val.s() != null) {
+                    ruleStr.append(String.format("(?c <%s%s> '%s') ", PHOA, name, val.s().toLowerCase()));
+                } else if (val.n() != null) {
+                    double expected = Double.parseDouble(val.n());
+                    double tolerance = getTolerance(name);
+                    ruleStr.append(String.format("(?c <%s%s> ?%s) ", PHOA, name, name));
+                    ruleStr.append(String.format("ge(?%s, %.1f) le(?%s, %.1f) ", name, expected - tolerance, name, expected + tolerance));
+                } else if (val.bool() != null) {
+                    ruleStr.append(String.format("(?c <%s%s> %s) ", PHOA, name, val.bool()));
                 }
             }
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("alerts", alerts);
-            return response;
+            if (!mainTrigger.isEmpty()) {
+                ruleStr.append(String.format("(?c <%sgroupText> ?txt) regex(?txt, '.*%s.*') ", PHOA, mainTrigger));
+            }
             
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("error", e.getMessage());
-            return error;
+            String fullRule = String.format("[rule_%s: %s-> (?u <%sneedsAlert> '%s')]", 
+                phobiaId, ruleStr.toString(), PHOA, phobiaId);
+            
+            try {
+                jenaRules.add(Rule.parseRule(fullRule));
+            } catch (Exception e) {
+                System.err.println("Rule parse error: " + e.getMessage());
+            }
         }
+        
+        Reasoner reasoner = new GenericRuleReasoner(jenaRules);
+        InfModel inf = ModelFactory.createInfModel(reasoner, model);
+        
+        List<Map<String, Object>> alerts = new ArrayList<>();
+        Property needsAlert = inf.createProperty(PHOA + "needsAlert");
+        StmtIterator iter = inf.listStatements(user, needsAlert, (RDFNode) null);
+        
+        while (iter.hasNext()) {
+            String phobiaId = iter.nextStatement().getObject().toString();
+            dbRules.stream()
+                .filter(r -> r.get("phobiaId").s().equals(phobiaId))
+                .findFirst()
+                .ifPresent(r -> alerts.add(Map.of(
+                    "id", "alert-" + System.currentTimeMillis(),
+                    "phobiaId", phobiaId,
+                    "phobiaName", r.get("phobiaName").s(),
+                    "severity", "high",
+                    "message", r.get("phobiaName").s() + " trigger detected",
+                    "createdAt", new Date().toString()
+                )));
+        }
+        
+        return Map.of("success", true, "alerts", alerts);
     }
     
-    private Map<String, Object> createAlert(String phobiaId, String severity, 
-                                            String message, List<String> recommendations) {
-        Map<String, Object> alert = new HashMap<>();
-        alert.put("id", "alert-" + System.currentTimeMillis());
-        alert.put("phobiaId", phobiaId);
-        alert.put("severity", severity);
-        alert.put("message", message);
-        alert.put("recommendations", recommendations);
-        alert.put("createdAt", new Date().toString());
-        return alert;
+    private double getTolerance(String name) {
+        return switch (name) {
+            case "heart_rate" -> 10.0;
+            case "noise_level" -> 15.0;
+            case "temperature" -> 5.0;
+            case "altitude" -> 20.0;
+            default -> 0.0;
+        };
     }
 }
