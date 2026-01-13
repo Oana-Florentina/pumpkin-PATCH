@@ -630,51 +630,50 @@ SELECT ?name ?desc ?url WHERE {
           The system implements a logical rule-based approach using Apache Jena for intelligent alert generation. Rules are dynamically loaded from Fuseki RDF triple store via SPARQL queries and applied through Jena reasoner inference.
         </p>
         
-        <h4>5.1.1 Rule Structure (Schema.org PropertyValue)</h4>
-        <pre><code>{
-  "phobiaId": "Q886731",
-  "phobiaName": "blood phobia",
-  "mainTrigger": "blood",
-  "sensorRules": [
-    {"@type": "PropertyValue", "name": "location_type", "value": "hospital"},
-    {"@type": "PropertyValue", "name": "heart_rate", "value": 120, "unitText": "BPM"},
-    {"@type": "PropertyValue", "name": "temperature", "value": 18, "unitText": "°C"},
-    {"@type": "PropertyValue", "name": "noise_level", "value": 55, "unitText": "dB"}
-  ]
-}</code></pre>
+        <h4>5.1.1 Rule Storage in Fuseki (RDF Format)</h4>
+        <pre><code>@prefix schema: &lt;http://schema.org/&gt; .
+@prefix phoa: &lt;http://phoa.com/&gt; .
 
-        <h4>5.1.2 Inference Logic</h4>
+phoa:rule/Q886731 a schema:PropertyValueSpecification ;
+    schema:name "blood phobia" ;
+    phoa:mainTrigger "blood" ;
+    phoa:heart_rate 120 .</code></pre>
+
+        <h4>5.1.2 Jena Rule Construction</h4>
         <p>
-          Alert generation follows this logic:
+          Rules are dynamically built from Fuseki SPARQL queries:
         </p>
+        <pre><code>[rule_Q886731: 
+  (?u schema:medicalCondition phoa:phobia/Q886731)
+  (?u phoa:heart_rate ?h) ge(?h, 120)
+  (?u phoa:groupText ?txt) regex(?txt, '.*blood.*', 'i')
+  -> (?u phoa:needsAlert 'Q886731')]</code></pre>
+
+        <h4>5.1.3 Inference Process</h4>
         <ol>
-          <li><strong>Sensor Matching:</strong> Compare current sensor values with rule thresholds using tolerances (±10 BPM, ±5°C, ±15 dB, ±20m)</li>
-          <li><strong>Text Matching:</strong> Check if mainTrigger appears in group messages</li>
-          <li><strong>Decision:</strong>
-            <ul>
-              <li>If mainTrigger exists: Alert = (≥60% sensors match) AND (text match)</li>
-              <li>If no mainTrigger: Alert = (≥60% sensors match)</li>
-            </ul>
-          </li>
-          <li><strong>Recommendations:</strong> Retrieve possibleTreatment from phobia data</li>
+          <li><strong>Load Facts:</strong> User phobias, sensor data, group messages as RDF triples in Jena Model</li>
+          <li><strong>Query Rules:</strong> SPARQL to Fuseki retrieves mainTrigger and heart_rate for user phobias</li>
+          <li><strong>Build Jena Rules:</strong> Dynamic construction with ge() for numeric comparisons, regex() for text</li>
+          <li><strong>Apply Reasoner:</strong> GenericRuleReasoner performs forward-chaining inference</li>
+          <li><strong>Extract Alerts:</strong> Query inferred phoa:needsAlert statements</li>
+          <li><strong>Get Recommendations:</strong> SPARQL query to Fuseki for schema:MedicalTherapy linked to phobia</li>
         </ol>
 
-        <h4>5.1.3 Example Scenario</h4>
-        <pre><code>User: Has blood phobia (Q886731)
-Context: location_type="hospital", heart_rate=115, temperature=20
-Group: Someone wrote "I saw blood"
+        <h4>5.1.4 Example: Blood Phobia Detection</h4>
+        <p><strong>Input Facts (RDF):</strong></p>
+        <pre><code>phoa:user/current schema:medicalCondition phoa:phobia/Q886731 ;
+                  phoa:heart_rate 120 ;
+                  phoa:groupText "i saw blood" .</code></pre>
 
-Matching:
-  ✓ location_type: "hospital" == "hospital"
-  ✓ heart_rate: 115 in range [110, 130] (120 ±10)
-  ✓ temperature: 20 in range [13, 23] (18 ±5)
-  → 3/4 sensors = 75% > 60% threshold
-  ✓ text: "blood" found in message
+        <p><strong>Jena Inference:</strong> Reasoner matches all conditions → infers:</p>
+        <pre><code>phoa:user/current phoa:needsAlert 'Q886731' .</code></pre>
 
-Result: ALERT with recommendations:
-  - Practice deep breathing
-  - Exposure therapy (from DBpedia)
-  - NHS Health Guide</code></pre>
+        <p><strong>Output Alert (RDF Turtle):</strong></p>
+        <pre><code>phoa:alert/1768458031867 a schema:MedicalRiskFactor ;
+    schema:name "blood phobia" ;
+    schema:description "blood phobia trigger detected" ;
+    phoa:severity "high" ;
+    schema:dateCreated "2026-01-15T06:20:31Z" .</code></pre>
       </section>
 
       <section id="context-sources">
