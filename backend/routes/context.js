@@ -70,6 +70,7 @@ router.post('/', async (req, res) => {
   if (latitude && longitude) {
     const weatherData = await getWeatherData(latitude, longitude);
     context.weather = weatherData;
+    context.altitude = weatherData?.elevation || 0;
     
     const sunData = await getSunriseSunset(latitude, longitude);
     context.sun = sunData;

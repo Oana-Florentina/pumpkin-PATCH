@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getHeartbeat, getAltitude, getNoiseLevel, getRoomSize } from '../services/deviceSimulator';
+import { getHeartbeat, getAltitude, getNoiseLevel } from '../services/deviceSimulator';
 import { getUserLocation, sendContext } from '../services/api';
 
 function Devices() {
@@ -11,9 +11,8 @@ function Devices() {
 
   const [deviceData, setDeviceData] = useState({
     heartRate: 72,
-    location: { lat: 40.7128, lng: -74.0060, name: 'New York, NY', type: 'Loading...', address: 'Loading...' },
+    location: { lat: 40.7128, lng: -74.0060, name: 'New York, NY', type: 'Loading...' },
     environmentalData: {
-      roomSize: 'Medium (15m²)',
       altitude: '10m',
       temperature: '22°C',
       noiseLevel: '45dB',
@@ -60,8 +59,7 @@ function Devices() {
         environmentalData: {
           ...prev.environmentalData,
           altitude: `${getAltitude()}m`,
-          noiseLevel: `${getNoiseLevel()}dB`,
-          roomSize: getRoomSize()
+          noiseLevel: `${getNoiseLevel()}dB`
         }
       }));
     }, 3000);
@@ -135,10 +133,6 @@ function Devices() {
               <div className="env-item">
                 <span className="env-label">📍 Location Type</span>
                 <span className="env-value">{deviceData.location.type}</span>
-              </div>
-              <div className="env-item">
-                <span className="env-label">🏠 Room Size</span>
-                <span className="env-value">{deviceData.environmentalData.roomSize}</span>
               </div>
               <div className="env-item">
                 <span className="env-label">⛰️ Altitude</span>

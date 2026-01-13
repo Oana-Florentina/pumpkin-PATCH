@@ -16,9 +16,4 @@ const getNoiseLevel = () => {
   return baseNoise + variation;
 };
 
-const getRoomSize = () => {
-  const sizes = ['Small (8m²)', 'Medium (15m²)', 'Large (25m²)', 'Very Large (40m²)'];
-  return sizes[Math.floor(Math.random() * sizes.length)];
-};
-
-export { getHeartbeat, getAltitude, getNoiseLevel, getRoomSize };
+export { getHeartbeat, getAltitude, getNoiseLevel };
