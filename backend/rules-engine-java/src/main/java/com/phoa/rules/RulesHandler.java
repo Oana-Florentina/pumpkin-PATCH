@@ -86,6 +86,8 @@ public class RulesHandler implements RequestHandler<Map<String, Object>, Map<Str
             String fullRule = String.format("[rule_%s: %s-> (?u <%sneedsAlert> '%s')]", 
                 phobiaId, ruleStr.toString(), PHOA, phobiaId);
             
+            System.out.println("DEBUG Rule: " + fullRule);
+            
             try {
                 jenaRules.add(Rule.parseRule(fullRule));
             } catch (Exception e) {
