@@ -18,7 +18,9 @@ function Devices() {
     noiseLevel: null,
     sunrise: null,
     sunset: null,
-    weatherCode: null
+    weatherCode: null,
+    isNight: null,
+    currentTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   });
 
   useEffect(() => {
@@ -32,12 +34,13 @@ function Devices() {
         setDeviceData(prev => ({
           ...prev,
           location: {
-            name: loc?.address?.city || loc?.address?.town || 'Unknown',
-            type: loc?.type || loc?.amenity || 'Unknown'
+            name: loc?.address?.city || loc?.address?.town || data.context?.locationName || 'Unknown',
+            type: loc?.type || loc?.amenity || data.context?.locationType || 'Unknown'
           },
-          altitude: weather?.elevation || null,
+          altitude: weather?.elevation || data.context?.altitude || null,
           temperature: weather?.temperature_2m || null,
           weatherCode: weather?.weather_code || null,
+          isNight: data.context?.is_night || false,
           sunrise: sun?.sunrise ? new Date(sun.sunrise).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
           sunset: sun?.sunset ? new Date(sun.sunset).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null
         }));
@@ -50,7 +53,8 @@ function Devices() {
       setDeviceData(prev => ({
         ...prev,
         heartRate: getHeartbeat(),
-        noiseLevel: getNoiseLevel()
+        noiseLevel: getNoiseLevel(),
+        currentTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
       }));
     }, 3000);
     return () => clearInterval(interval);
@@ -122,6 +126,10 @@ function Devices() {
           <div className="environmental-section">
             <h2>Environmental Context</h2>
             <div className="env-grid">
+              <div className="env-item">
+                <span className="env-label">🕐 Current Time</span>
+                <span className="env-value">{deviceData.currentTime} {deviceData.isNight ? '🌙 Night' : '☀️ Day'}</span>
+              </div>
               <div className="env-item">
                 <span className="env-label">📍 Location Type</span>
                 <span className="env-value">{deviceData.location.type}</span>

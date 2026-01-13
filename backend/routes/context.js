@@ -75,9 +75,16 @@ router.post('/', async (req, res) => {
     const sunData = await getSunriseSunset(latitude, longitude);
     context.sun = sunData;
     
+    const now = new Date();
+    const sunrise = sunData?.sunrise ? new Date(sunData.sunrise) : null;
+    const sunset = sunData?.sunset ? new Date(sunData.sunset) : null;
+    context.is_night = sunrise && sunset ? (now < sunrise || now > sunset) : false;
+    
     const locationDetails = await getLocationDetails(latitude, longitude);
     context.locationType = locationDetails?.type || locationDetails?.amenity || 'unknown';
     context.locationName = locationDetails?.address?.city || locationDetails?.address?.town || 'Unknown';
+    context.location = locationDetails;
+  }
   }
 
   if (req.query.format === 'jsonld') {

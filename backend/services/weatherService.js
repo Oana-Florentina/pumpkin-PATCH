@@ -6,8 +6,7 @@ const getWeatherData = async (latitude, longitude) => {
       params: { 
         latitude: latitude,
         longitude: longitude,
-        current: 'temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,uv_index,weather_code',
-        elevation: true
+        current: 'temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,uv_index,weather_code'
       }
     });
     return {
