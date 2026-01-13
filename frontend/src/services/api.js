@@ -28,6 +28,10 @@ export const getAlerts = (phobias, context, groupMessages = []) => fetch(`${API}
   body: JSON.stringify({ phobias, context, groupMessages })
 }).then(r => r.json()).then(d => d.alerts || []);
 
+export const getGroupMessages = (groupId) => fetch(`${API}/api/groups/${groupId}/messages`, {
+  headers: { 'Authorization': 'Bearer ' + getToken() }
+}).then(r => r.json()).then(d => d.data || []);
+
 export const getUserLocation = () => new Promise((resolve, reject) => {
   if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
   navigator.geolocation.getCurrentPosition(

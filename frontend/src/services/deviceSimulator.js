@@ -1,7 +1,15 @@
 let micStream = null;
 let noiseLevel = null;
+let currentHeartRate = 70;
 
-const getHeartbeat = () => 70 + Math.floor(Math.random() * 30);
+const getHeartbeat = () => {
+  currentHeartRate = Math.min(currentHeartRate + 0.5, 120);
+  return Math.round(currentHeartRate);
+};
+
+const resetHeartRate = () => {
+  currentHeartRate = 70;
+};
 
 const getNoiseLevel = () => noiseLevel;
 
@@ -37,4 +45,4 @@ const stopMicrophone = () => {
   noiseLevel = null;
 };
 
-export { getHeartbeat, getNoiseLevel, startMicrophone, stopMicrophone, isMicrophoneEnabled };
+export { getHeartbeat, resetHeartRate, getNoiseLevel, startMicrophone, stopMicrophone, isMicrophoneEnabled };

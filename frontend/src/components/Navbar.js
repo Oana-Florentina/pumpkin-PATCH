@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { logout } from '../services/auth';
 
 function Navbar({ user, setUser }) {
   const navigate = useNavigate();
@@ -7,6 +8,7 @@ function Navbar({ user, setUser }) {
   const [darkMode, setDarkMode] = useState(false);
 
   const handleLogout = () => {
+    logout();
     setUser(null);
     navigate('/');
     setIsMenuOpen(false);
@@ -37,7 +39,6 @@ function Navbar({ user, setUser }) {
             <li><Link to="/dashboard" onClick={closeMenu}>Dashboard</Link></li>
             <li><Link to="/remedies" onClick={closeMenu}>Remedies</Link></li>
             <li><Link to="/alerts" onClick={closeMenu}>Alerts</Link></li>
-            <li><Link to="/devices" onClick={closeMenu}>Monitoring</Link></li>
             <li><Link to="/groups" onClick={closeMenu}>Groups</Link></li>
           </ul>
           <div className="nav-user">

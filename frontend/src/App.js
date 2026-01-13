@@ -9,6 +9,7 @@ import Remedies from './pages/Remedies';
 import Alerts from './pages/Alerts';
 import Groups from './pages/Groups';
 import Devices from './pages/Devices';
+import Admin from './pages/Admin';
 import { getUserLocation, sendContext } from './services/api';
 import './App.css';
 
@@ -75,6 +76,7 @@ function App() {
           <Route path="/alerts" element={user ? <Alerts selectedPhobias={selectedPhobias} /> : <Navigate to="/login" />} />
           <Route path="/groups" element={user ? <Groups /> : <Navigate to="/login" />} />
           <Route path="/devices" element={user ? <Devices /> : <Navigate to="/login" />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </div>
     </Router>

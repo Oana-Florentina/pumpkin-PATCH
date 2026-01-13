@@ -7,7 +7,7 @@ const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
 
 async function getAllPhobiasFromWikidata() {
   const query = `
-    SELECT ?phobia ?label ?description ?image ?nhsId ?mainSubject ?mainSubjectLabel ?subreddit ?icd10 WHERE {
+    SELECT ?phobia ?label ?description ?image ?nhsId ?mainSubject ?mainSubjectLabel ?subreddit ?icd10 ?tvTropes WHERE {
       ?phobia wdt:P279* wd:Q175854 .
       ?phobia rdfs:label ?label .
       OPTIONAL { ?phobia schema:description ?description . FILTER(LANG(?description) = "en") }
@@ -16,6 +16,7 @@ async function getAllPhobiasFromWikidata() {
       OPTIONAL { ?phobia wdt:P921 ?mainSubject . ?mainSubject rdfs:label ?mainSubjectLabel . FILTER(LANG(?mainSubjectLabel) = "en") }
       OPTIONAL { ?phobia wdt:P3984 ?subreddit }
       OPTIONAL { ?phobia wdt:P494 ?icd10 }
+      OPTIONAL { ?phobia wdt:P6839 ?tvTropes }
       FILTER(LANG(?label) = "en")
     }
   `;
@@ -24,10 +25,10 @@ async function getAllPhobiasFromWikidata() {
   const data = await res.json();
   
   const phobias = [];
+  let index = 0;
   for (const b of data.results.bindings) {
     let description = b.description?.value;
     
-    // Dacă nu are descriere, încearcă Wikipedia
     if (!description || description === 'No description available') {
       description = await fetchWikipediaDescription(b.label.value);
     }
@@ -41,9 +42,10 @@ async function getAllPhobiasFromWikidata() {
       description: description || 'No description available',
       image: b.image?.value || null,
       trigger: b.mainSubjectLabel?.value || null,
-      possibleTreatment: await buildTreatments(b)
+      possibleTreatment: await buildTreatments(b, index, data.results.bindings.length)
     };
     phobias.push(phobia);
+    index++;
   }
   
   return phobias;
@@ -60,10 +62,25 @@ async function fetchWikipediaDescription(phobiaName) {
   }
 }
 
-async function buildTreatments(binding) {
+async function buildTreatments(binding, index, total) {
   const treatments = [];
   
-  // NHS link
+  console.log(`Checking DBpedia for phobia ${index}/${total}: ${binding.label.value}`);
+  const wikidataId = binding.phobia.value.split('/').pop();
+  const dbpediaTreatment = await extractTreatmentFromDBpedia(wikidataId);
+  if (dbpediaTreatment) {
+    treatments.push(dbpediaTreatment);
+  }
+  
+  if (binding.tvTropes?.value) {
+    treatments.push({
+      '@type': 'Game',
+      name: 'Media & Games Reference',
+      url: `https://tvtropes.org/pmwiki/pmwiki.php/${binding.tvTropes.value}`,
+      description: 'Explore how this phobia is portrayed in games, movies, and media'
+    });
+  }
+  
   if (binding.nhsId?.value) {
     treatments.push({
       '@type': 'WebPage',
@@ -72,7 +89,6 @@ async function buildTreatments(binding) {
     });
   }
   
-  // Reddit community
   if (binding.subreddit?.value) {
     treatments.push({
       '@type': 'WebPage',
@@ -81,7 +97,6 @@ async function buildTreatments(binding) {
     });
   }
   
-  // Generic treatment based on category
   treatments.push({
     '@type': 'PsychologicalTreatment',
     name: 'Breathing & Grounding Exercise',
@@ -112,35 +127,41 @@ async function extractFromMedlinePlus(icd10Code) {
   return null;
 }
 
-async function extractTreatmentFromDBpedia(phobiaName) {
+async function extractTreatmentFromDBpedia(wikidataId) {
   try {
-    const query = `
-      SELECT ?abstract WHERE {
-        ?phobia rdfs:label "${phobiaName}"@en .
-        ?phobia dbo:abstract ?abstract .
-        FILTER(LANG(?abstract) = "en")
-      } LIMIT 1
-    `;
-    const url = `https://dbpedia.org/sparql?query=${encodeURIComponent(query)}&format=json`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'PhoA-App/1.0' }, timeout: 5000 });
-    const data = await res.json();
+    const query = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT ?dbpedia WHERE {
+  ?dbpedia owl:sameAs <http://www.wikidata.org/entity/${wikidataId}> .
+}`;
     
-    if (data.results.bindings.length > 0) {
-      const abstract = data.results.bindings[0].abstract.value;
-      const sentences = abstract.split('. ');
-      
-      for (const sentence of sentences) {
-        if (sentence.match(/treatment|therapy|manage|cope|overcome/i)) {
-          return {
-            '@type': 'PsychologicalTreatment',
-            name: 'Evidence-based approach',
-            description: sentence.substring(0, 200) + '...'
-          };
-        }
-      }
+    const sparqlUrl = `https://dbpedia.org/sparql?query=${encodeURIComponent(query)}&format=json`;
+    const sparqlRes = await fetch(sparqlUrl, { headers: { 'User-Agent': 'PhoA-App/1.0' } });
+    const sparqlData = await sparqlRes.json();
+    
+    if (!sparqlData.results.bindings.length) return null;
+    
+    const dbpediaUri = sparqlData.results.bindings[0].dbpedia.value;
+    const dataUrl = dbpediaUri.replace('/resource/', '/data/') + '.json';
+    
+    const dataRes = await fetch(dataUrl, { headers: { 'User-Agent': 'PhoA-App/1.0' } });
+    const data = await dataRes.json();
+    const resource = data[dbpediaUri];
+    if (!resource) return null;
+    
+    const treatmentKey = 'http://dbpedia.org/property/treatment';
+    if (resource[treatmentKey] && resource[treatmentKey][0]) {
+      const treatmentUri = resource[treatmentKey][0].value;
+      const treatmentName = treatmentUri.split('/').pop().replace(/_/g, ' ');
+      console.log(`DBpedia treatment found for ${wikidataId}: ${treatmentName}`);
+      return {
+        '@type': 'MedicalTherapy',
+        name: treatmentName,
+        url: treatmentUri,
+        description: 'Evidence-based treatment from DBpedia'
+      };
     }
   } catch (err) {
-    console.error('DBpedia failed:', err);
+    console.error(`DBpedia extraction failed for ${wikidataId}:`, err.message);
   }
   return null;
 }

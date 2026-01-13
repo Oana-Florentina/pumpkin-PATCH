@@ -1,56 +1,167 @@
 import React, { useState, useEffect } from 'react';
 import { getUserLocation, sendContext, getAlerts } from '../services/api';
-import { getHeartbeat, getNoiseLevel, isMicrophoneEnabled } from '../services/deviceSimulator';
+import { getNoiseLevel, startMicrophone, stopMicrophone, isMicrophoneEnabled } from '../services/deviceSimulator';
+import { getToken } from '../services/auth';
+
+const API = 'https://x7v2x7sgsg.execute-api.us-east-1.amazonaws.com';
 
 function Alerts({ selectedPhobias }) {
   const [alerts, setAlerts] = useState([]);
   const [context, setContext] = useState({});
   const [loading, setLoading] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [heartRate, setHeartRate] = useState(70);
+  const [baselineHeartRate, setBaselineHeartRate] = useState(70);
+  const [micEnabled, setMicEnabled] = useState(false);
+  const [groupMessages, setGroupMessages] = useState([]);
+  const [sensorData, setSensorData] = useState({
+    location: { name: 'Loading...', type: 'Loading...' },
+    altitude: null,
+    temperature: null,
+    noiseLevel: null,
+    sunrise: null,
+    sunset: null,
+    isNight: null,
+    currentTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  });
 
   useEffect(() => {
-    const fetchContext = async () => {
+    setNotificationsEnabled(Notification.permission === 'granted');
+    
+    const fetchGroupMessages = async () => {
       try {
-        const loc = await getUserLocation();
-        const data = await sendContext({ ...loc, timestamp: new Date().toISOString() });
-        setContext({
-          location_type: data.context?.location?.type || data.context?.location?.amenity || null,
-          locationName: data.context?.location?.address?.city || 'Unknown',
-          altitude: data.context?.weather?.elevation || null,
-          temperature: data.context?.weather?.temperature_2m || null,
-          weather_code: data.context?.weather?.weather_code || null,
-          season: getSeason(),
-          is_night: isNight(data.context?.sun)
+        const groupsRes = await fetch(`${API}/api/groups/me`, {
+          headers: { 'Authorization': 'Bearer ' + getToken() }
         });
-      } catch (e) {
-        console.log('Context error:', e.message);
+        const groupsData = await groupsRes.json();
+        
+        if (groupsData.success && groupsData.data.length > 0) {
+          const allMessages = [];
+          for (const group of groupsData.data) {
+            const messagesRes = await fetch(`${API}/api/groups/${group.id}/messages`, {
+              headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            const messagesData = await messagesRes.json();
+            if (messagesData.success) {
+              allMessages.push(...messagesData.data);
+            }
+          }
+          setGroupMessages(allMessages);
+          console.log('Group messages loaded:', allMessages.length);
+        }
+      } catch (err) {
+        console.log('Failed to load group messages:', err.message);
       }
-      setLoading(false);
     };
-    fetchContext();
+    
+    fetchGroupMessages();
   }, []);
 
   useEffect(() => {
-    if (selectedPhobias.length === 0 || loading) return;
+    getUserLocation()
+      .then(loc => sendContext({ ...loc, timestamp: new Date().toISOString() }))
+      .then(data => {
+        const weather = data.context?.weather;
+        const sun = data.context?.sun;
+        const loc = data.context?.location;
+        
+        setSensorData(prev => ({
+          ...prev,
+          location: {
+            name: loc?.address?.city || loc?.address?.town || data.context?.locationName || 'Unknown',
+            type: loc?.type || loc?.amenity || data.context?.locationType || 'Unknown'
+          },
+          altitude: weather?.elevation || data.context?.altitude || null,
+          temperature: weather?.temperature_2m || null,
+          isNight: data.context?.is_night || false,
+          sunrise: sun?.sunrise ? new Date(sun.sunrise).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
+          sunset: sun?.sunset ? new Date(sun.sunset).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null
+        }));
+        
+        setContext({
+          location_type: loc?.type || loc?.amenity || data.context?.locationType || null,
+          locationName: loc?.address?.city || data.context?.locationName || 'Unknown',
+          altitude: weather?.elevation || data.context?.altitude || null,
+          temperature: weather?.temperature_2m || null,
+          weather_code: weather?.weather_code || null,
+          season: getSeason(),
+          is_night: data.context?.is_night || false
+        });
+      })
+      .catch(err => console.log('Location error:', err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
-    const checkAlerts = async () => {
-      const sensorContext = {
-        ...context,
-        heart_rate: getHeartbeat(),
-        noise_level: isMicrophoneEnabled() ? getNoiseLevel() : null
-      };
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSensorData(prev => ({
+        ...prev,
+        noiseLevel: getNoiseLevel(),
+        currentTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      }));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
-      try {
-        const newAlerts = await getAlerts(selectedPhobias, sensorContext, []);
-        setAlerts(newAlerts);
-      } catch (e) {
-        console.log('Alerts error:', e.message);
-      }
+  const toggleNotifications = async () => {
+    if (Notification.permission === 'granted') {
+      alert('Notifications already enabled. Disable them in browser settings.');
+    } else {
+      const permission = await Notification.requestPermission();
+      setNotificationsEnabled(permission === 'granted');
+    }
+  };
+
+  const toggleMicrophone = async () => {
+    if (isMicrophoneEnabled()) {
+      stopMicrophone();
+      setMicEnabled(false);
+    } else {
+      const ok = await startMicrophone();
+      setMicEnabled(ok);
+    }
+  };
+
+  const checkAlerts = async () => {
+    const sensorContext = {
+      ...context,
+      heart_rate: heartRate,
+      noise_level: isMicrophoneEnabled() ? getNoiseLevel() : null
     };
 
-    checkAlerts();
-    const interval = setInterval(checkAlerts, 10000);
-    return () => clearInterval(interval);
-  }, [selectedPhobias, context, loading]);
+    console.log('Checking alerts:', { phobias: selectedPhobias, context: sensorContext });
+
+    try {
+      const newAlerts = await getAlerts(selectedPhobias, sensorContext, groupMessages);
+      console.log('Alerts received:', newAlerts);
+      setAlerts(newAlerts);
+      
+      if (newAlerts.length > 0) {
+        const alertMsg = newAlerts.map(a => 
+          `⚠️ ${a.phobiaName}\n${a.message}${a.recommendations ? '\n\nRecommendations:\n• ' + a.recommendations.join('\n• ') : ''}`
+        ).join('\n\n');
+        alert(alertMsg);
+        
+        if (Notification.permission === 'granted') {
+          console.log('Sending notifications for', newAlerts.length, 'alerts');
+          newAlerts.forEach(alert => {
+            const body = alert.message + 
+              (alert.recommendations ? '\n\nRecommendations:\n• ' + alert.recommendations.join('\n• ') : '');
+            console.log('Creating notification:', alert.phobiaName);
+            new Notification('⚠️ Phobia Alert', {
+              body,
+              icon: '/logo192.png',
+              tag: alert.phobiaId
+            });
+          });
+        }
+      } else {
+        console.log('No notifications:', {alertCount: newAlerts.length, permission: Notification.permission});
+      }
+    } catch (e) {
+      console.log('Alerts error:', e.message);
+    }
+  };
 
   const getSeason = () => {
     const month = new Date().getMonth();
@@ -60,25 +171,118 @@ function Alerts({ selectedPhobias }) {
     return 'Winter';
   };
 
-  const isNight = (sun) => {
-    if (!sun) return false;
-    const now = new Date();
-    return now < new Date(sun.sunrise) || now > new Date(sun.sunset);
-  };
-
   return (
-    <div className="page-container">
-      <h1>Alerts & Notifications</h1>
-      <div className="context-display">
-        <p>📍 Location: {context.locationName || 'Loading...'}</p>
-        <p>🏷️ Type: {context.location_type || 'Unknown'}</p>
-        <p>🌸 Season: {context.season}</p>
-        <p>🌡️ Temperature: {context.temperature !== null ? `${context.temperature}°C` : 'N/A'}</p>
-        <p>⛰️ Altitude: {context.altitude !== null ? `${context.altitude}m` : 'N/A'}</p>
+    <div className="page-container" vocab="http://schema.org/">
+      <h1>Monitoring & Alerts</h1>
+      <p className="subtitle">Real-time sensor monitoring and phobia detection</p>
+
+      <div className="environmental-section">
+        <h2>Current Sensors</h2>
+        
+        <div style={{marginBottom: '20px', padding: '15px', borderRadius: '8px'}}>
+          <span className="env-label" style={{display: 'block', marginBottom: '10px', fontSize: '16px', fontWeight: 'bold'}}>
+            ❤️ Heart Rate: <span style={{color: '#f44336'}}>{heartRate} BPM</span>
+          </span>
+          <input 
+            type="range" 
+            value={heartRate} 
+            onChange={(e) => {
+              const newHR = Number(e.target.value);
+              setHeartRate(newHR);
+              
+              if (newHR - baselineHeartRate >= 10 || newHR >= 95) {
+                console.log('Heart rate spike detected:', newHR, 'baseline:', baselineHeartRate);
+                checkAlerts();
+                setBaselineHeartRate(newHR);
+              }
+            }}
+            min="40" 
+            max="200"
+            style={{
+              width: '100%',
+              height: '10px',
+              WebkitAppearance: 'none',
+              appearance: 'none',
+              background: 'linear-gradient(to right, #81C784 0%, #FFB74D 50%, #E57373 100%)',
+              borderRadius: '5px',
+              outline: 'none'
+            }}
+          />
+          <style>{`
+            input[type="range"]::-webkit-slider-thumb {
+              -webkit-appearance: none;
+              appearance: none;
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              background: #f44336;
+              cursor: pointer;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+            input[type="range"]::-moz-range-thumb {
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              background: #f44336;
+              cursor: pointer;
+              border: none;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+          `}</style>
+          <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#999', marginTop: '5px'}}>
+            <span>40</span>
+            <span>120</span>
+            <span>200</span>
+          </div>
+        </div>
+        
+        <div className="env-grid">
+          <div className="env-item">
+            <span className="env-label">🌙 Time of Day</span>
+            <span className="env-value">{sensorData.isNight ? 'Night' : 'Day'}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">📍 Location</span>
+            <span className="env-value">{sensorData.location.name}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🏷️ Location Type</span>
+            <span className="env-value">{sensorData.location.type}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">⛰️ Altitude</span>
+            <span className="env-value">{sensorData.altitude !== null ? `${sensorData.altitude}m` : 'N/A'}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🌡️ Temperature</span>
+            <span className="env-value">{sensorData.temperature !== null ? `${sensorData.temperature}°C` : 'N/A'}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🔊 Noise Level</span>
+            <span className="env-value">{sensorData.noiseLevel !== null ? `${sensorData.noiseLevel}dB` : 'Mic off'}</span>
+          </div>
+          <div className="env-item" onClick={toggleMicrophone} style={{cursor: 'pointer'}}>
+            <span className="env-label">🎤 Microphone</span>
+            <span className="env-value" style={{color: micEnabled ? '#4CAF50' : '#f44336'}}>
+              {micEnabled ? 'ON' : 'OFF'}
+            </span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🌅 Sunrise</span>
+            <span className="env-value">{sensorData.sunrise || 'N/A'}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🌇 Sunset</span>
+            <span className="env-value">{sensorData.sunset || 'N/A'}</span>
+          </div>
+        </div>
       </div>
 
       <section className="alerts-section">
         <h2>Active Alerts</h2>
+        <button onClick={toggleNotifications} className={notificationsEnabled ? 'btn-disconnect' : 'btn-connect'} style={{marginBottom: '20px'}}>
+          {notificationsEnabled ? '🔔 Notifications ON' : '🔕 Enable Notifications'}
+        </button>
         {loading ? (
           <div className="alert-card info"><p>Loading...</p></div>
         ) : alerts.length === 0 ? (
@@ -91,15 +295,33 @@ function Alerts({ selectedPhobias }) {
             <div key={alert.id} className={`alert-card ${alert.severity}`}>
               <h3>⚠️ {alert.phobiaName}</h3>
               <p>{alert.message}</p>
-              <span className="timestamp">{new Date(alert.createdAt).toLocaleString()}</span>
+              {alert.recommendations && alert.recommendations.length > 0 && (
+                <div style={{marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)'}}>
+                  <strong>Recommendations:</strong>
+                  <ul style={{marginTop: '5px', paddingLeft: '20px'}}>
+                    {alert.recommendations.map((rec, i) => {
+                      const urlMatch = rec.match(/\[(https?:\/\/[^\]]+)\]/);
+                      if (urlMatch) {
+                        const text = rec.replace(urlMatch[0], '').trim();
+                        return (
+                          <li key={i}>
+                            {text} <a href={urlMatch[1]} target="_blank" rel="noopener noreferrer" style={{color: '#4CAF50', textDecoration: 'underline'}}>View →</a>
+                          </li>
+                        );
+                      }
+                      return <li key={i}>{rec}</li>;
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
           ))
         )}
       </section>
 
       <div className="device-info-box">
-        <h3>📱 How Alerts Work</h3>
-        <p>Alerts are generated by matching your phobias with sensor data (location, weather, heart rate, noise) and group messages.</p>
+        <h3>📱 How It Works</h3>
+        <p>Adjust heart rate manually to simulate stress. When heart rate increases by 10+ BPM or exceeds 95 BPM, the system automatically checks for phobia triggers and sends alerts with recommendations.</p>
       </div>
     </div>
   );

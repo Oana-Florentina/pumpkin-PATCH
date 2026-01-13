@@ -18,19 +18,19 @@ router.post('/', authMiddleware, async (req, res) => {
   
   const id = `group-${Date.now()}`;
   const inviteCode = generateCode();
-  await createGroup(id, name, inviteCode, req.userId);
+  await createGroup(id, name, inviteCode, req.userEmail);
   res.json({ success: true, data: { id, name, inviteCode } });
 });
 
 router.get('/me', authMiddleware, async (req, res) => {
-  const groups = await getUserGroups(req.userId);
+  const groups = await getUserGroups(req.userEmail);
   res.json({ success: true, data: groups });
 });
 
 router.get('/:id', authMiddleware, async (req, res) => {
   const group = await getGroup(req.params.id);
   if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
-  if (!group.members.includes(req.userId)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
+  if (!group.members.includes(req.userEmail)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
   res.json({ success: true, data: group });
 });
 
@@ -40,7 +40,7 @@ router.post('/:id/join', authMiddleware, async (req, res) => {
   if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
   if (group.inviteCode !== inviteCode) return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Invalid invite code' } });
   
-  await addGroupMember(req.params.id, req.userId);
+  await addGroupMember(req.params.id, req.userEmail);
   res.json({ success: true, data: { message: 'Joined group', groupId: req.params.id } });
 });
 
@@ -51,7 +51,7 @@ router.post('/:id/report', authMiddleware, async (req, res) => {
   
   const group = await getGroup(req.params.id);
   if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
-  if (!group.members.includes(req.userId)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
+  if (!group.members.includes(req.userEmail)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
   
   // Verifică care membri au fobii cu acest trigger
   const { getUserPhobias } = require('../services/dbService');
@@ -80,13 +80,50 @@ router.post('/:id/report', authMiddleware, async (req, res) => {
       PK: `GROUP#${req.params.id}`,
       SK: `REPORT#${Date.now()}`,
       trigger,
-      reportedBy: req.userId,
+      reportedBy: req.userEmail,
       affectedMembers: affectedCount,
       timestamp: new Date().toISOString()
     }
   }));
   
   res.json({ success: true, data: { message: 'Trigger reported', affectedMembers: affectedCount } });
+});
+
+router.get('/:id/messages', authMiddleware, async (req, res) => {
+  const group = await getGroup(req.params.id);
+  if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
+  if (!group.members.includes(req.userEmail)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
+  
+  const { QueryCommand } = require('@aws-sdk/lib-dynamodb');
+  const { Items } = await db.send(new QueryCommand({
+    TableName: TABLE,
+    KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+    ExpressionAttributeValues: { ':pk': `GROUP#${req.params.id}`, ':sk': 'REPORT#' },
+    ScanIndexForward: false,
+    Limit: 50
+  }));
+  
+  const messages = (Items || []).map(i => ({
+    text: i.trigger,
+    reportedBy: i.reportedBy,
+    timestamp: i.timestamp
+  }));
+  
+  res.json({ success: true, data: messages });
+});
+
+router.delete('/:id/messages/:timestamp', authMiddleware, async (req, res) => {
+  const group = await getGroup(req.params.id);
+  if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
+  if (!group.members.includes(req.userEmail)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
+  
+  const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+  await db.send(new DeleteCommand({
+    TableName: TABLE,
+    Key: { PK: `GROUP#${req.params.id}`, SK: `REPORT#${req.params.timestamp}` }
+  }));
+  
+  res.json({ success: true, data: { message: 'Trigger deleted' } });
 });
 
 module.exports = router;

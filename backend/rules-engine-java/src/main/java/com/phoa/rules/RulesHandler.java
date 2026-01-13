@@ -6,8 +6,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 import software.amazon.awssdk.regions.Region;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.reasoner.rulesys.*;
-import org.apache.jena.reasoner.*;
 import java.util.*;
 
 public class RulesHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
@@ -15,6 +13,11 @@ public class RulesHandler implements RequestHandler<Map<String, Object>, Map<Str
     private static final String PHOA = "http://example.org/phoa#";
     private static final DynamoDbClient ddb = DynamoDbClient.builder()
             .region(Region.US_EAST_1).build();
+    
+    private static final Map<String, Double> TOLERANCES = Map.of(
+        "heart_rate", 10.0, "noise_level", 15.0, "temperature", 5.0, 
+        "altitude", 20.0, "weather_code", 0.0
+    );
 
     @Override
     public Map<String, Object> handleRequest(Map<String, Object> input, Context ctx) {
@@ -28,8 +31,8 @@ public class RulesHandler implements RequestHandler<Map<String, Object>, Map<Str
         ).items();
         
         Model model = ModelFactory.createDefaultModel();
-        Resource user = model.createResource(PHOA + "currentUser");
-        Resource context = model.createResource(PHOA + "currentContext");
+        Resource user = model.createResource(PHOA + "user");
+        Resource context = model.createResource(PHOA + "context");
         
         for (String phobiaId : userPhobias) {
             user.addProperty(model.createProperty(PHOA + "hasPhobia"), phobiaId);
@@ -37,96 +40,140 @@ public class RulesHandler implements RequestHandler<Map<String, Object>, Map<Str
         
         sensors.forEach((name, value) -> {
             if (value == null) return;
+            Property prop = model.createProperty(PHOA + name);
             if (value instanceof Number) {
-                context.addLiteral(model.createProperty(PHOA + name), ((Number) value).doubleValue());
+                context.addLiteral(prop, ((Number) value).doubleValue());
             } else if (value instanceof Boolean) {
-                context.addLiteral(model.createProperty(PHOA + name), (Boolean) value);
+                context.addLiteral(prop, (Boolean) value);
             } else {
-                context.addProperty(model.createProperty(PHOA + name), value.toString().toLowerCase());
+                context.addProperty(prop, value.toString().toLowerCase());
             }
         });
         
-        StringBuilder allMessages = new StringBuilder();
-        groupMsgs.forEach(msg -> allMessages.append(msg.getOrDefault("text", "").toLowerCase()).append(" "));
-        context.addProperty(model.createProperty(PHOA + "groupText"), allMessages.toString());
-        
-        List<Rule> jenaRules = new ArrayList<>();
-        
-        for (Map<String, AttributeValue> dbRule : dbRules) {
-            String phobiaId = dbRule.get("phobiaId").s();
-            String mainTrigger = dbRule.containsKey("mainTrigger") ? dbRule.get("mainTrigger").s().toLowerCase() : "";
-            List<AttributeValue> sensorRules = dbRule.get("sensorRules").l();
-            
-            StringBuilder ruleStr = new StringBuilder();
-            ruleStr.append(String.format("(?u <%shasPhobia> '%s') ", PHOA, phobiaId));
-            
-            for (AttributeValue ruleAttr : sensorRules) {
-                Map<String, AttributeValue> sr = ruleAttr.m();
-                String name = sr.get("name").s();
-                AttributeValue val = sr.get("value");
-                
-                if (val.nul() != null && val.nul()) continue;
-                
-                if (val.s() != null) {
-                    ruleStr.append(String.format("(?c <%s%s> '%s') ", PHOA, name, val.s().toLowerCase()));
-                } else if (val.n() != null) {
-                    double expected = Double.parseDouble(val.n());
-                    double tolerance = getTolerance(name);
-                    ruleStr.append(String.format("(?c <%s%s> ?%s) ", PHOA, name, name));
-                    ruleStr.append(String.format("ge(?%s, %.1f) le(?%s, %.1f) ", name, expected - tolerance, name, expected + tolerance));
-                } else if (val.bool() != null) {
-                    ruleStr.append(String.format("(?c <%s%s> %s) ", PHOA, name, val.bool()));
-                }
-            }
-            
-            if (!mainTrigger.isEmpty()) {
-                ruleStr.append(String.format("(?c <%sgroupText> ?txt) regex(?txt, '.*%s.*') ", PHOA, mainTrigger));
-            }
-            
-            String fullRule = String.format("[rule_%s: %s-> (?u <%sneedsAlert> '%s')]", 
-                phobiaId, ruleStr.toString(), PHOA, phobiaId);
-            
-            System.out.println("DEBUG Rule: " + fullRule);
-            
-            try {
-                jenaRules.add(Rule.parseRule(fullRule));
-            } catch (Exception e) {
-                System.err.println("Rule parse error: " + e.getMessage());
-            }
-        }
-        
-        Reasoner reasoner = new GenericRuleReasoner(jenaRules);
-        InfModel inf = ModelFactory.createInfModel(reasoner, model);
-        
         List<Map<String, Object>> alerts = new ArrayList<>();
-        Property needsAlert = inf.createProperty(PHOA + "needsAlert");
-        StmtIterator iter = inf.listStatements(user, needsAlert, (RDFNode) null);
         
-        while (iter.hasNext()) {
-            String phobiaId = iter.nextStatement().getObject().toString();
-            dbRules.stream()
+        for (String phobiaId : userPhobias) {
+            Map<String, AttributeValue> rule = dbRules.stream()
                 .filter(r -> r.get("phobiaId").s().equals(phobiaId))
-                .findFirst()
-                .ifPresent(r -> alerts.add(Map.of(
+                .findFirst().orElse(null);
+            if (rule == null) continue;
+            
+            String phobiaName = rule.get("phobiaName").s();
+            String mainTrigger = rule.containsKey("mainTrigger") ? rule.get("mainTrigger").s() : "";
+            List<AttributeValue> sensorRules = rule.get("sensorRules").l();
+            
+            boolean sensorMatch = matchSensors(sensorRules, sensors);
+            boolean textMatch = matchText(mainTrigger, groupMsgs);
+            
+            boolean shouldAlert = mainTrigger.isEmpty() ? sensorMatch : (sensorMatch && textMatch);
+            
+            if (shouldAlert) {
+                Resource alert = model.createResource(PHOA + "alert_" + phobiaId);
+                alert.addProperty(model.createProperty(PHOA + "forPhobia"), phobiaId);
+                alert.addProperty(model.createProperty(PHOA + "severity"), "high");
+                alert.addProperty(model.createProperty(PHOA + "triggeredBy"), "rule_based_inference");
+                
+                Map<String, AttributeValue> phobiaData = getPhobiaData(phobiaId);
+                List<String> recommendations = extractRecommendations(phobiaData);
+                
+                alerts.add(Map.of(
                     "id", "alert-" + System.currentTimeMillis(),
                     "phobiaId", phobiaId,
-                    "phobiaName", r.get("phobiaName").s(),
+                    "phobiaName", phobiaName,
                     "severity", "high",
-                    "message", r.get("phobiaName").s() + " trigger detected",
+                    "message", phobiaName + " trigger detected",
+                    "recommendations", recommendations,
                     "createdAt", new Date().toString()
-                )));
+                ));
+            }
         }
         
-        return Map.of("success", true, "alerts", alerts);
+        return Map.of("success", true, "alerts", alerts, "rdfTriples", model.size());
     }
     
-    private double getTolerance(String name) {
-        switch (name) {
-            case "heart_rate": return 10.0;
-            case "noise_level": return 15.0;
-            case "temperature": return 5.0;
-            case "altitude": return 20.0;
-            default: return 0.0;
+    private boolean matchSensors(List<AttributeValue> rules, Map<String, Object> sensors) {
+        int matched = 0, total = 0;
+        
+        for (AttributeValue ruleAttr : rules) {
+            Map<String, AttributeValue> rule = ruleAttr.m();
+            String name = rule.get("name").s();
+            AttributeValue val = rule.get("value");
+            
+            if (val.nul() != null && val.nul()) continue;
+            total++;
+            
+            Object actual = sensors.get(name);
+            if (actual == null) continue;
+            
+            boolean match = false;
+            
+            if (val.s() != null) {
+                match = val.s().equalsIgnoreCase(actual.toString());
+            } else if (val.n() != null) {
+                double expected = Double.parseDouble(val.n());
+                double actualVal = ((Number) actual).doubleValue();
+                double tolerance = TOLERANCES.getOrDefault(name, 0.0);
+                match = Math.abs(actualVal - expected) <= tolerance;
+            } else if (val.bool() != null) {
+                match = val.bool().equals(actual);
+            }
+            
+            if (match) matched++;
         }
+        
+        return total > 0 && (double) matched / total >= 0.6;
+    }
+    
+    private boolean matchText(String trigger, List<Map<String, String>> messages) {
+        if (trigger == null || trigger.isEmpty()) return true;
+        if (messages == null || messages.isEmpty()) return false;
+        
+        String[] words = trigger.toLowerCase().split("[\\s,]+");
+        return messages.stream().anyMatch(msg -> {
+            String text = msg.getOrDefault("text", "").toLowerCase();
+            return Arrays.stream(words).anyMatch(text::contains);
+        });
+    }
+    
+    private Map<String, AttributeValue> getPhobiaData(String phobiaId) {
+        try {
+            GetItemResponse response = ddb.getItem(GetItemRequest.builder()
+                .tableName("phoa-data")
+                .key(Map.of("PK", AttributeValue.builder().s("PHOBIA#" + phobiaId).build(),
+                           "SK", AttributeValue.builder().s("META").build()))
+                .build());
+            return response.item();
+        } catch (Exception e) {
+            return new HashMap<>();
+        }
+    }
+    
+    private List<String> extractRecommendations(Map<String, AttributeValue> phobiaData) {
+        List<String> recs = new ArrayList<>();
+        if (phobiaData.isEmpty()) return recs;
+        
+        AttributeValue treatments = phobiaData.get("possibleTreatment");
+        if (treatments != null && treatments.l() != null) {
+            for (AttributeValue treatment : treatments.l()) {
+                Map<String, AttributeValue> t = treatment.m();
+                String name = t.containsKey("name") ? t.get("name").s() : "";
+                String desc = t.containsKey("description") ? t.get("description").s() : "";
+                String url = t.containsKey("url") ? t.get("url").s() : "";
+                
+                if (!name.isEmpty()) {
+                    String rec = name;
+                    if (!desc.isEmpty()) rec += ": " + desc;
+                    if (!url.isEmpty()) rec += " [" + url + "]";
+                    recs.add(rec);
+                }
+            }
+        }
+        
+        if (recs.isEmpty()) {
+            recs.add("Practice deep breathing exercises");
+            recs.add("Find a safe space");
+        }
+        
+        return recs;
     }
 }

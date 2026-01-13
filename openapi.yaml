@@ -1,0 +1,552 @@
+openapi: 3.0.0
+info:
+  title: PhoA API
+  description: Phobia Web Assistant - Context-aware phobia detection and remedies
+  version: 1.0.0
+  contact:
+    name: Briana-Stefania Maftei & Oana-Florentina Dumitriu
+    email: briana.maftei@gmail.com
+
+servers:
+  - url: https://x7v2x7sgsg.execute-api.us-east-1.amazonaws.com
+    description: Production server
+
+tags:
+  - name: Phobias
+    description: Phobia data from Wikidata and DBpedia
+  - name: Users
+    description: User management and phobia tracking
+  - name: Context
+    description: Environmental context and sensor data
+  - name: Alerts
+    description: Rule-based phobia detection
+  - name: Groups
+    description: Group management and trigger reporting
+  - name: Admin
+    description: Administrative functions
+
+paths:
+  /api/phobias:
+    get:
+      tags: [Phobias]
+      summary: Get all phobias
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search query
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, jsonld]
+      responses:
+        '200':
+          description: List of phobias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Phobia'
+
+  /api/phobias/{id}:
+    get:
+      tags: [Phobias]
+      summary: Get phobia by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Q220783
+      responses:
+        '200':
+          description: Phobia details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Phobia'
+
+  /api/users/me/phobias:
+    get:
+      tags: [Users]
+      summary: Get user's phobias
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User's phobia list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        addedAt:
+                          type: string
+                          format: date-time
+    
+    post:
+      tags: [Users]
+      summary: Add phobia to user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phobiaId:
+                  type: string
+                  example: Q220783
+      responses:
+        '200':
+          description: Phobia added
+
+  /api/context:
+    post:
+      tags: [Context]
+      summary: Send environmental context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: number
+                  example: 47.1718
+                longitude:
+                  type: number
+                  example: 27.5741
+                timestamp:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Context processed with alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      alerts:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Alert'
+                      context:
+                        $ref: '#/components/schemas/Context'
+
+  /api/alerts:
+    post:
+      tags: [Alerts]
+      summary: Check for phobia alerts using rule-based system
+      description: Uses Apache Jena rule-based engine to match sensor data with phobia rules from DynamoDB
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phobias:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Q220783", "Q186892"]
+                context:
+                  $ref: '#/components/schemas/SensorContext'
+                groupMessages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                      timestamp:
+                        type: string
+      responses:
+        '200':
+          description: Alerts generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+                  rdfTriples:
+                    type: integer
+                    description: Number of RDF triples in Jena model
+
+  /api/groups:
+    post:
+      tags: [Groups]
+      summary: Create new group
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: My Family
+      responses:
+        '200':
+          description: Group created
+
+  /api/groups/me:
+    get:
+      tags: [Groups]
+      summary: Get user's groups
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of groups
+
+  /api/groups/{id}/report:
+    post:
+      tags: [Groups]
+      summary: Report trigger to group
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trigger:
+                  type: string
+                  example: spider
+      responses:
+        '200':
+          description: Trigger reported
+
+  /api/groups/{id}/messages:
+    get:
+      tags: [Groups]
+      summary: Get group messages/triggers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of triggers
+
+  /api/admin/sync-phobias:
+    post:
+      tags: [Admin]
+      summary: Sync phobias from Wikidata and DBpedia
+      description: Extracts phobias from Wikidata, enriches with DBpedia treatments and TV Tropes media references
+      responses:
+        '200':
+          description: Sync completed
+
+  /api/admin/generate-rules:
+    post:
+      tags: [Admin]
+      summary: Generate sensor rules using AI
+      description: Uses Gemini AI to generate Schema.org PropertyValue rules for phobia detection
+      responses:
+        '200':
+          description: Rules generation started
+
+  /api/admin/test-scenario:
+    post:
+      tags: [Admin]
+      summary: Test custom scenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phobias:
+                  type: array
+                  items:
+                    type: string
+                context:
+                  $ref: '#/components/schemas/SensorContext'
+                groupMessages:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: Test results
+
+  /api/shacl/validate:
+    post:
+      tags: [Admin]
+      summary: Validate RDF data using SHACL-like constraints
+      description: Validates phobias and rules in DynamoDB against Schema.org shapes
+      responses:
+        '200':
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  validation:
+                    type: object
+                    properties:
+                      phobias:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          valid:
+                            type: integer
+                          invalid:
+                            type: integer
+                          errors:
+                            type: array
+                            items:
+                              type: object
+                      rules:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          valid:
+                            type: integer
+                          invalid:
+                            type: integer
+                      summary:
+                        type: string
+                        example: "Validated 156 phobias and 17 rules. Total valid: 170/173"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Phobia:
+      type: object
+      properties:
+        '@context':
+          type: string
+          example: http://schema.org/
+        '@type':
+          type: string
+          example: MedicalCondition
+        '@id':
+          type: string
+          example: http://www.wikidata.org/entity/Q220783
+        id:
+          type: string
+          example: Q220783
+        name:
+          type: string
+          example: arachnophobia
+        description:
+          type: string
+        trigger:
+          type: string
+          example: Araneae
+        image:
+          type: string
+          format: uri
+        possibleTreatment:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/MedicalTherapy'
+              - $ref: '#/components/schemas/WebPage'
+              - $ref: '#/components/schemas/PsychologicalTreatment'
+              - $ref: '#/components/schemas/Game'
+
+    MedicalTherapy:
+      type: object
+      properties:
+        '@type':
+          type: string
+          example: MedicalTherapy
+        name:
+          type: string
+          example: Exposure therapy
+        url:
+          type: string
+          format: uri
+        description:
+          type: string
+
+    WebPage:
+      type: object
+      properties:
+        '@type':
+          type: string
+          example: WebPage
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+
+    PsychologicalTreatment:
+      type: object
+      properties:
+        '@type':
+          type: string
+          example: PsychologicalTreatment
+        name:
+          type: string
+        description:
+          type: string
+
+    Game:
+      type: object
+      properties:
+        '@type':
+          type: string
+          example: Game
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        description:
+          type: string
+
+    SensorContext:
+      type: object
+      properties:
+        location_type:
+          type: string
+          example: hospital
+        heart_rate:
+          type: number
+          example: 95
+        noise_level:
+          type: number
+          example: 50
+        temperature:
+          type: number
+          example: -5
+        altitude:
+          type: number
+          example: 98
+        weather_code:
+          type: number
+          example: 3
+        season:
+          type: string
+          enum: [Spring, Summer, Fall, Winter]
+        is_night:
+          type: boolean
+
+    Context:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        season:
+          type: string
+        timeOfDay:
+          type: string
+        weather:
+          type: object
+          properties:
+            temperature_2m:
+              type: number
+            weather_code:
+              type: number
+            elevation:
+              type: number
+        sun:
+          type: object
+          properties:
+            sunrise:
+              type: string
+              format: date-time
+            sunset:
+              type: string
+              format: date-time
+        location:
+          type: object
+          properties:
+            type:
+              type: string
+            amenity:
+              type: string
+            address:
+              type: object
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        phobiaId:
+          type: string
+        phobiaName:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high]
+        message:
+          type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time

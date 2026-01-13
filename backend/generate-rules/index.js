@@ -3,7 +3,7 @@ const { DynamoDBDocumentClient, PutCommand, ScanCommand } = require('@aws-sdk/li
 
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({ region: 'us-east-1' }));
 
-const LOCATIONS = "hospital, school, restaurant, place_of_worship, university, park, museum, apartments, building, bridge";
+const LOCATIONS = "hospital, school, restaurant, place_of_worship, university, park, museum, apartments, building, bridge, company, supermarket, parking";
 const WEATHER_CODES = "0, 3, 45, 61, 71, 95";
 const SEASONS = "Spring, Summer, Fall, Winter";
 

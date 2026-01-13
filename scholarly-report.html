@@ -63,27 +63,37 @@
     <section typeof="sa:Abstract" id="abstract" role="doc-abstract">
       <h2>Abstract</h2>
       <p>
-        PhoA (Phobia Web Assistant) is a multi-device web application designed to help users manage and overcome phobias through personalized remedies, context-aware alerts, and semantic web integration. The system leverages DBpedia and Wikidata knowledge bases, implements RDF data modeling with Schema.org vocabulary, and provides real-time monitoring through device integration. Context-aware notifications are triggered based on environmental factors including time, location, weather conditions, and physiological sensors. The application follows modern web engineering practices with a microservices architecture deployed on AWS cloud infrastructure.
+        PhoA (Phobia Web Assistant) is a multi-device web application that provides context-aware phobia detection and personalized remedies through semantic web integration and rule-based inference. The system leverages Wikidata and DBpedia knowledge bases via SPARQL queries, implements RDF data modeling with Schema.org vocabulary, and uses Apache Jena for logical rule-based reasoning. Context-aware alerts are triggered based on environmental sensors (location, weather, temperature, altitude), physiological data (heart rate, noise level), and social triggers from user groups. The application integrates multiple external APIs (Open-Meteo, Nominatim, Sunrise-Sunset.org, TV Tropes) and uses Google Gemini AI for automated rule generation. Deployed on AWS cloud infrastructure with Lambda functions, DynamoDB, S3, and CloudFront, the system demonstrates modern web engineering practices including microservices architecture, serverless computing, and semantic web technologies. The rule-based approach using Apache Jena enables dynamic, data-driven phobia detection with tolerance-based sensor matching and RDF inference, fulfilling the bonus requirement for logical rule-based systems.
       </p>
     </section>
 
     <section id="introduction">
       <h2>1. Introduction</h2>
       <p>
-        Phobias affect millions of people worldwide, significantly impacting their quality of life. Traditional treatment approaches often lack personalization and real-time contextual awareness. PhoA addresses these limitations by combining semantic web technologies with modern cloud-based architecture to deliver intelligent, context-aware phobia management.
+        Phobias are anxiety disorders affecting millions of people worldwide, significantly impacting quality of life and daily activities. Traditional treatment approaches often lack personalization and real-time contextual awareness, relying on scheduled therapy sessions without considering immediate environmental triggers. PhoA addresses these limitations by combining semantic web technologies, rule-based inference systems, and cloud-based architecture to deliver intelligent, context-aware phobia management.
       </p>
       
       <section id="motivation">
         <h3>1.1 Motivation</h3>
         <p>
-          The motivation for developing PhoA stems from the need for:
+          The motivation for developing PhoA stems from several key challenges:
         </p>
         <ul>
-          <li>Personalized phobia management based on individual user profiles</li>
-          <li>Context-aware alerts triggered by environmental and physiological factors</li>
-          <li>Integration with semantic web knowledge bases for evidence-based remedies</li>
-          <li>Multi-user support for families, coworkers, and social networks</li>
-          <li>Real-time monitoring through wearable devices and sensors</li>
+          <li><strong>Lack of personalization:</strong> Generic treatment approaches don't account for individual triggers and contexts</li>
+          <li><strong>No real-time detection:</strong> Traditional therapy can't respond to immediate phobia triggers</li>
+          <li><strong>Limited knowledge integration:</strong> Existing solutions don't leverage semantic web knowledge bases</li>
+          <li><strong>Isolated treatment:</strong> No support for family/friend groups to help identify triggers</li>
+          <li><strong>Manual monitoring:</strong> Users must self-report symptoms without automated detection</li>
+        </ul>
+        <p>
+          PhoA solves these challenges through:
+        </p>
+        <ul>
+          <li>Rule-based inference with Apache Jena for automated phobia detection</li>
+          <li>Integration with Wikidata (156 phobias) and DBpedia (8 treatments) via SPARQL</li>
+          <li>Real-time sensor monitoring (heart rate, location, weather, noise)</li>
+          <li>Group-based trigger reporting and social support</li>
+          <li>AI-powered rule generation using Google Gemini</li>
         </ul>
       </section>
 
@@ -93,11 +103,17 @@
           The primary objectives of this project are:
         </p>
         <ol>
-          <li>Develop a semantic web-based application using RDF, SPARQL, and Schema.org</li>
-          <li>Implement context-aware alert system based on time, location, and environmental data</li>
-          <li>Integrate with DBpedia and Wikidata for phobia information and remedies</li>
-          <li>Provide multi-device support with smartwatch integration</li>
-          <li>Deploy a scalable microservices architecture on AWS cloud</li>
+          <li>Develop a semantic web application using RDF, SPARQL, Schema.org, and RDFa markup</li>
+          <li>Implement rule-based inference system with Apache Jena for phobia detection (bonus requirement)</li>
+          <li>Integrate multiple knowledge bases (Wikidata, DBpedia, TV Tropes) via SPARQL queries</li>
+          <li>Create context-aware alert system based on environmental and physiological sensors</li>
+          <li>Provide multi-user support with group trigger reporting and QR code sharing</li>
+          <li>Deploy scalable microservices architecture on AWS cloud (Lambda, DynamoDB, S3, CloudFront)</li>
+          <li>Generate sensor rules automatically using AI (Gemini 2.5 Flash)</li>
+          <li>Aggregate remedies from multiple sources (DBpedia treatments, NHS guides, Reddit communities, TV Tropes media)</li>
+        </ol>
+      </section>
+    </section>
           <li>Implement rule-based reasoning for intelligent alert generation</li>
         </ol>
       </section>
@@ -192,16 +208,31 @@
             <tr>
               <td>Backend Runtime</td>
               <td>Node.js + Express</td>
-              <td>5.2.1</td>
+              <td>18.x / 5.2.1</td>
+            </tr>
+            <tr>
+              <td>Rules Engine</td>
+              <td>Java + Apache Jena</td>
+              <td>11 / 4.10.0</td>
+            </tr>
+            <tr>
+              <td>AI Integration</td>
+              <td>Google Gemini 2.5 Flash</td>
+              <td>API</td>
             </tr>
             <tr>
               <td>Serverless</td>
               <td>AWS Lambda</td>
-              <td>-</td>
+              <td>4 functions</td>
             </tr>
             <tr>
               <td>Database</td>
               <td>AWS DynamoDB</td>
+              <td>2 tables</td>
+            </tr>
+            <tr>
+              <td>CDN</td>
+              <td>AWS CloudFront + S3</td>
               <td>-</td>
             </tr>
             <tr>
@@ -210,9 +241,14 @@
               <td>-</td>
             </tr>
             <tr>
-              <td>HTTP Client</td>
-              <td>Axios</td>
-              <td>1.13.2</td>
+              <td>Knowledge Bases</td>
+              <td>Wikidata + DBpedia</td>
+              <td>SPARQL</td>
+            </tr>
+            <tr>
+              <td>External APIs</td>
+              <td>Open-Meteo, Nominatim, Sunrise-Sunset, TV Tropes</td>
+              <td>-</td>
             </tr>
           </tbody>
         </table>
@@ -247,7 +283,81 @@
       <section id="sparql-queries">
         <h3>4.2 SPARQL Queries</h3>
         <p>
-          Five SPARQL queries are implemented for knowledge base integration:
+          Multiple SPARQL queries are implemented for knowledge base integration:
+        </p>
+        
+        <h4>4.2.1 Wikidata - Phobia Extraction</h4>
+        <pre><code>SELECT ?phobia ?label ?description ?image ?nhsId 
+       ?mainSubject ?mainSubjectLabel ?subreddit ?icd10 ?tvTropes 
+WHERE {
+  ?phobia wdt:P279* wd:Q175854 .
+  ?phobia rdfs:label ?label .
+  OPTIONAL { ?phobia schema:description ?description }
+  OPTIONAL { ?phobia wdt:P18 ?image }
+  OPTIONAL { ?phobia wdt:P7995 ?nhsId }
+  OPTIONAL { ?phobia wdt:P921 ?mainSubject . 
+             ?mainSubject rdfs:label ?mainSubjectLabel }
+  OPTIONAL { ?phobia wdt:P3984 ?subreddit }
+  OPTIONAL { ?phobia wdt:P494 ?icd10 }
+  OPTIONAL { ?phobia wdt:P6839 ?tvTropes }
+  FILTER(LANG(?label) = "en")
+}</code></pre>
+        <p>
+          This query extracts 156 phobias with triggers, NHS links, Reddit communities, ICD-10 codes, and TV Tropes media references.
+        </p>
+
+        <h4>4.2.2 DBpedia - Treatment Extraction via owl:sameAs</h4>
+        <pre><code>PREFIX owl: &lt;http://www.w3.org/2002/07/owl#&gt;
+SELECT ?dbpedia WHERE {
+  ?dbpedia owl:sameAs &lt;http://www.wikidata.org/entity/Q220783&gt; .
+}</code></pre>
+        <p>
+          Links Wikidata entities to DBpedia resources, enabling extraction of medical treatments. Successfully retrieves treatments for 8 phobias including Exposure therapy, Cognitive behavioral therapy, and Gabapentin.
+        </p>
+      </section>
+
+      <section id="rule-based-system">
+        <h3>4.3 Rule-Based Inference with Apache Jena</h3>
+        <p>
+          PhoA implements a logical rule-based system using Apache Jena for phobia detection. Rules are stored as Schema.org PropertyValue objects in DynamoDB and dynamically loaded for inference.
+        </p>
+        
+        <h4>4.3.1 Rule Structure</h4>
+        <p>
+          Each phobia has 7 sensor rules with tolerance-based matching:
+        </p>
+        <pre><code>{
+  "phobiaId": "Q220783",
+  "phobiaName": "arachnophobia",
+  "mainTrigger": "Araneae",
+  "sensorRules": [
+    {"@type": "PropertyValue", "name": "location_type", "value": "forest"},
+    {"@type": "PropertyValue", "name": "heart_rate", "value": 110, "unitText": "BPM"},
+    {"@type": "PropertyValue", "name": "season", "value": "Summer"},
+    {"@type": "PropertyValue", "name": "noise_level", "value": null}
+  ]
+}</code></pre>
+
+        <h4>4.3.2 Inference Process</h4>
+        <ol>
+          <li>User's phobias and sensor data are inserted into Jena RDF model</li>
+          <li>Rules are loaded from DynamoDB and converted to RDF triples</li>
+          <li>Sensor matching with tolerances: ±10 BPM, ±5°C, ±15 dB, ±20m</li>
+          <li>Text matching for mainTrigger in group messages</li>
+          <li>Alert generated if ≥60% sensors match AND (mainTrigger matches OR no mainTrigger)</li>
+          <li>Recommendations retrieved from phobia's possibleTreatment</li>
+        </ol>
+
+        <h4>4.3.3 RDF Model</h4>
+        <p>
+          The Jena model contains triples representing:
+        </p>
+        <ul>
+          <li>User phobias: <code>:user :hasPhobia "Q220783"</code></li>
+          <li>Sensor facts: <code>:context :heart_rate 95</code></li>
+          <li>Alert results: <code>:alert :forPhobia "Q220783"</code></li>
+        </ul>
+      </section>
         </p>
         
         <h4>Query 1: Phobia Information from DBpedia</h4>
@@ -294,32 +404,56 @@ LIMIT 20</code></pre>
       <h2>5. Context-Aware Alert System</h2>
       
       <section id="rule-based">
-        <h3>5.1 Rule-Based Reasoning</h3>
+        <h3>5.1 Rule-Based Reasoning with Apache Jena</h3>
         <p>
-          The system implements rule-based logic for intelligent alert generation:
+          The system implements a logical rule-based approach using Apache Jena for intelligent alert generation. Rules are dynamically loaded from DynamoDB and applied through RDF inference.
         </p>
         
-        <h4>Rule Example 1: Seasonal Allergies</h4>
-        <pre><code>IF phobia = "pollenAllergy" 
-   AND season = "Spring" 
-   AND pollenLevel = "High"
-THEN 
-   sendAlert("High pollen levels detected")
-   suggestRemedy("Take antihistamine")</code></pre>
+        <h4>5.1.1 Rule Structure (Schema.org PropertyValue)</h4>
+        <pre><code>{
+  "phobiaId": "Q886731",
+  "phobiaName": "blood phobia",
+  "mainTrigger": "blood",
+  "sensorRules": [
+    {"@type": "PropertyValue", "name": "location_type", "value": "hospital"},
+    {"@type": "PropertyValue", "name": "heart_rate", "value": 120, "unitText": "BPM"},
+    {"@type": "PropertyValue", "name": "temperature", "value": 18, "unitText": "°C"},
+    {"@type": "PropertyValue", "name": "noise_level", "value": 55, "unitText": "dB"}
+  ]
+}</code></pre>
 
-        <h4>Rule Example 2: Nyctophobia (Fear of Darkness)</h4>
-        <pre><code>IF phobia = "nyctophobia" 
-   AND timeOfDay = "Night"
-THEN 
-   forceTheme("light-mode")
-   sendAlert("Nighttime detected. Keep lights on")</code></pre>
+        <h4>5.1.2 Inference Logic</h4>
+        <p>
+          Alert generation follows this logic:
+        </p>
+        <ol>
+          <li><strong>Sensor Matching:</strong> Compare current sensor values with rule thresholds using tolerances (±10 BPM, ±5°C, ±15 dB, ±20m)</li>
+          <li><strong>Text Matching:</strong> Check if mainTrigger appears in group messages</li>
+          <li><strong>Decision:</strong>
+            <ul>
+              <li>If mainTrigger exists: Alert = (≥60% sensors match) AND (text match)</li>
+              <li>If no mainTrigger: Alert = (≥60% sensors match)</li>
+            </ul>
+          </li>
+          <li><strong>Recommendations:</strong> Retrieve possibleTreatment from phobia data</li>
+        </ol>
 
-        <h4>Rule Example 3: Claustrophobia</h4>
-        <pre><code>IF phobia = "claustrophobia" 
-   AND roomSize = "Small"
-THEN 
-   sendAlert("Small space detected")
-   suggestRemedy("Practice breathing exercises")</code></pre>
+        <h4>5.1.3 Example Scenario</h4>
+        <pre><code>User: Has blood phobia (Q886731)
+Context: location_type="hospital", heart_rate=115, temperature=20
+Group: Someone wrote "I saw blood"
+
+Matching:
+  ✓ location_type: "hospital" == "hospital"
+  ✓ heart_rate: 115 in range [110, 130] (120 ±10)
+  ✓ temperature: 20 in range [13, 23] (18 ±5)
+  → 3/4 sensors = 75% > 60% threshold
+  ✓ text: "blood" found in message
+
+Result: ALERT with recommendations:
+  - Practice deep breathing
+  - Exposure therapy (from DBpedia)
+  - NHS Health Guide</code></pre>
       </section>
 
       <section id="context-sources">
@@ -327,33 +461,29 @@ THEN
         
         <h4>5.2.1 Temporal Context</h4>
         <ul>
-          <li>Time of day (morning, afternoon, evening, night)</li>
-          <li>Day of week (weekend social event warnings)</li>
-          <li>Season (Spring, Summer, Fall, Winter)</li>
-          <li>Sunrise/sunset times (Sunrise-Sunset.org API)</li>
+          <li><strong>is_night</strong> - Boolean based on sunrise/sunset times</li>
+          <li><strong>season</strong> - Spring, Summer, Fall, Winter (calculated from month)</li>
+          <li><strong>Sunrise/sunset</strong> - Exact times from Sunrise-Sunset.org API</li>
         </ul>
 
         <h4>5.2.2 Environmental Context</h4>
         <ul>
-          <li>Weather conditions (Open-Meteo API)</li>
-          <li>Temperature, humidity, precipitation</li>
-          <li>UV index, cloud cover, wind speed</li>
-          <li>Weather code (WMO standard 0-99)</li>
+          <li><strong>Weather data</strong> - Open-Meteo API (temperature, weather_code, precipitation)</li>
+          <li><strong>Altitude</strong> - Elevation from weather API</li>
+          <li><strong>Location type</strong> - Nominatim reverse geocoding (hospital, park, forest, apartments, etc.)</li>
         </ul>
 
-        <h4>5.2.3 Location Context</h4>
+        <h4>5.2.3 Physiological Context</h4>
         <ul>
-          <li>GPS coordinates (browser geolocation)</li>
-          <li>Address and place type (Nominatim API)</li>
-          <li>Nearby amenities (hospitals, bridges, tunnels)</li>
+          <li><strong>Heart rate</strong> - Manual slider (40-200 BPM) with auto-trigger on spike</li>
+          <li><strong>Noise level</strong> - Real-time microphone input (0-120 dB)</li>
+          <li><strong>Auto-detection</strong> - Alerts triggered when heart rate increases ≥10 BPM or exceeds 95 BPM</li>
         </ul>
 
-        <h4>5.2.4 Physiological Context</h4>
+        <h4>5.2.4 Social Context</h4>
         <ul>
-          <li>Heart rate monitoring (simulated smartwatch)</li>
-          <li>Altitude tracking</li>
-          <li>Noise level detection</li>
-          <li>Room size estimation</li>
+          <li><strong>Group messages</strong> - Trigger words reported by family/friends</li>
+          <li><strong>Text matching</strong> - mainTrigger detection in messages (e.g., "spider", "blood", "confined space")</li>
         </ul>
       </section>
     </section>
@@ -364,50 +494,68 @@ THEN
       <section id="dashboard">
         <h3>6.1 Dashboard</h3>
         <ul>
-          <li>Search functionality for phobia database</li>
+          <li>Search functionality across 156 phobias from Wikidata</li>
           <li>Pagination (10 items per page)</li>
-          <li>Separate sections: "My Phobias" vs "Add Phobias to Track"</li>
-          <li>Dark mode toggle with automatic theme switching</li>
+          <li>My Phobias section with selected phobias</li>
+          <li>Add/remove phobias with instant save to DynamoDB</li>
+          <li>Phobia cards showing name, description, and trigger</li>
         </ul>
       </section>
 
       <section id="remedies">
         <h3>6.2 Remedies</h3>
+        <p>
+          Multi-source remedy aggregation:
+        </p>
         <ul>
-          <li>Medication recommendations linked to Wikidata</li>
-          <li>Physical exercises and breathing techniques</li>
-          <li>Reddit communities for talking</li>
-          <li>Psychological therapy suggestions</li>
-          <li>External web resources (DBpedia links)</li>
+          <li><strong>DBpedia</strong> - Medical therapies (Exposure therapy, CBT, Gabapentin) for 8 phobias</li>
+          <li><strong>NHS</strong> - Official health guides (~20 phobias)</li>
+          <li><strong>Reddit</strong> - Support communities (~30 phobias)</li>
+          <li><strong>TV Tropes</strong> - Media/game references for exposure therapy (5 phobias)</li>
+          <li><strong>Generic</strong> - Breathing exercises (4-7-8 technique, grounding)</li>
         </ul>
       </section>
 
-      <section id="alerts">
-        <h3>6.3 Alerts</h3>
+      <section id="alerts-monitoring">
+        <h3>6.3 Alerts & Monitoring (Unified Page)</h3>
         <ul>
-          <li>Time-based: Nighttime, seasonal, medication reminders</li>
-          <li>Weather-based: Temperature extremes, precipitation</li>
-          <li>Location-based: Place type detection</li>
-          <li>Device-based: Heart rate, altitude, noise monitoring</li>
+          <li><strong>Sensor Monitoring:</strong>
+            <ul>
+              <li>Heart rate slider (40-200 BPM) with gradient visualization</li>
+              <li>Real-time location via Geolocation API</li>
+              <li>Weather data (temperature, altitude)</li>
+              <li>Microphone for noise level (0-120 dB)</li>
+              <li>Sunrise/sunset times and is_night calculation</li>
+            </ul>
+          </li>
+          <li><strong>Auto-Detection:</strong> Alerts triggered when heart rate increases ≥10 BPM or exceeds 95 BPM</li>
+          <li><strong>Alert Display:</strong> Phobia name, message, recommendations, timestamp</li>
+          <li><strong>Browser Notifications:</strong> Push notifications with recommendations</li>
         </ul>
       </section>
 
       <section id="groups">
         <h3>6.4 Groups</h3>
         <ul>
-          <li>Multi-user management (family, coworkers)</li>
-          <li>Shared phobia tracking</li>
-          <li>Group alerts and notifications</li>
+          <li>Create groups with auto-generated invite codes</li>
+          <li>QR code sharing for easy joining</li>
+          <li>Report triggers to group members (e.g., "spider", "blood")</li>
+          <li>View trigger history with delete functionality</li>
+          <li>Group messages integrated into alert detection</li>
         </ul>
       </section>
 
-      <section id="devices">
-        <h3>6.5 Devices</h3>
+      <section id="admin">
+        <h3>6.5 Admin Panel</h3>
+        <p>
+          Demonstration and management interface:
+        </p>
         <ul>
-          <li>Smartwatch integration (simulated)</li>
-          <li>Real-time health monitoring (simulated)</li>
-          <li>Environmental sensor data</li>
-          <li>Location and address display</li>
+          <li><strong>Authentication:</strong> Cognito login with admin email verification</li>
+          <li><strong>Sync Phobias:</strong> Trigger Lambda to sync from Wikidata + DBpedia + TV Tropes</li>
+          <li><strong>Generate Rules:</strong> Trigger AI Lambda to generate sensor rules with Gemini</li>
+          <li><strong>Test Scenarios:</strong> Custom form to test rule engine with any sensor combination</li>
+          <li><strong>Real-time Results:</strong> JSON display of alerts and RDF triple count</li>
         </ul>
       </section>
     </section>
@@ -417,23 +565,80 @@ THEN
       
       <section id="api-integration">
         <h3>7.1 External API Integration</h3>
-        <p>
-          All integrated APIs are free and require no authentication keys:
-        </p>
+        
+        <h4>7.1.1 Semantic Web APIs</h4>
         <ul>
-          <li><strong>Open-Meteo:</strong> <code>https://api.open-meteo.com/v1/forecast</code></li>
-          <li><strong>Sunrise-Sunset.org:</strong> <code>https://api.sunrise-sunset.org/json</code></li>
-          <li><strong>Nominatim:</strong> <code>https://nominatim.openstreetmap.org/reverse</code></li>
+          <li><strong>Wikidata SPARQL:</strong> <code>https://query.wikidata.org/sparql</code>
+            <ul>
+              <li>156 phobias with structured data</li>
+              <li>Triggers (P921 - main subject)</li>
+              <li>ICD-10 codes (P494)</li>
+              <li>NHS links (P7995)</li>
+              <li>Reddit communities (P3984)</li>
+              <li>TV Tropes references (P6839)</li>
+            </ul>
+          </li>
+          <li><strong>DBpedia SPARQL + JSON:</strong> <code>https://dbpedia.org/sparql</code>
+            <ul>
+              <li>owl:sameAs linking to Wikidata entities</li>
+              <li>Medical treatments (8 phobias)</li>
+              <li>ICD codes and synonyms</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h4>7.1.2 Environmental APIs</h4>
+        <ul>
+          <li><strong>Open-Meteo:</strong> <code>https://api.open-meteo.com/v1/forecast</code> - Weather data, elevation</li>
+          <li><strong>Sunrise-Sunset.org:</strong> <code>https://api.sunrise-sunset.org/json</code> - Daylight times</li>
+          <li><strong>Nominatim:</strong> <code>https://nominatim.openstreetmap.org/reverse</code> - Reverse geocoding</li>
+        </ul>
+
+        <h4>7.1.3 AI Integration</h4>
+        <ul>
+          <li><strong>Google Gemini 2.5 Flash:</strong> <code>https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash</code>
+            <ul>
+              <li>Generates sensor rules from phobia descriptions</li>
+              <li>Maps psychological triggers to measurable thresholds</li>
+              <li>15-second delay between requests to avoid quota limits</li>
+            </ul>
+          </li>
         </ul>
       </section>
 
       <section id="authentication">
         <h3>7.2 Authentication</h3>
         <p>
-          AWS Cognito provides secure user authentication with:
+          AWS Cognito provides secure user authentication:
         </p>
         <ul>
-          <li>User registration and login</li>
+          <li>User pool: <code>us-east-1_vmMUqSwXC</code></li>
+          <li>Email-based registration with verification</li>
+          <li>JWT tokens for API authorization</li>
+          <li>Admin account with separate credentials</li>
+          <li>Session persistence in localStorage</li>
+        </ul>
+      </section>
+
+      <section id="deployment">
+        <h3>7.3 Deployment</h3>
+        <p>
+          Fully cloud-based deployment on AWS:
+        </p>
+        <ul>
+          <li><strong>Frontend:</strong> S3 bucket + CloudFront distribution (HTTPS)</li>
+          <li><strong>Backend:</strong> 4 Lambda functions (phoa-backend, phoa-rules-engine, phoa-sync-phobias, phoa-generate-rules)</li>
+          <li><strong>API Gateway:</strong> REST API endpoint</li>
+          <li><strong>Database:</strong> 2 DynamoDB tables</li>
+          <li><strong>CI/CD:</strong> GitHub Actions for automated deployment</li>
+          <li><strong>Monitoring:</strong> CloudWatch billing alarm at $1 threshold</li>
+        </ul>
+        
+        <p>
+          <strong>Live URL:</strong> <a href="https://d3pnfxsee44y6e.cloudfront.net">https://d3pnfxsee44y6e.cloudfront.net</a>
+        </p>
+      </section>
+    </section>
           <li>JWT token-based authorization</li>
           <li>Password reset functionality</li>
           <li>Session management</li>
@@ -454,11 +659,207 @@ THEN
       </section>
     </section>
 
+    <section id="bonus-features">
+      <h2>8. Bonus Implementation: Rule-Based System with Apache Jena</h2>
+      
+      <section id="jena-overview">
+        <h3>8.1 Overview</h3>
+        <p>
+          PhoA implements a logical rule-based system using Apache Jena, fulfilling the bonus requirement for "providing various Description Logics reasoning features by using a knowledge-based reasoner tool and/or a logical rule-based system (e.g. Apache Jena)".
+        </p>
+      </section>
+
+      <section id="jena-implementation">
+        <h3>8.2 Implementation</h3>
+        
+        <h4>8.2.1 RDF Model Construction</h4>
+        <p>
+          The system constructs an RDF model with:
+        </p>
+        <pre><code>Model model = ModelFactory.createDefaultModel();
+Resource user = model.createResource(PHOA + "user");
+Resource context = model.createResource(PHOA + "context");
+
+// Add user phobias
+user.addProperty(model.createProperty(PHOA + "hasPhobia"), phobiaId);
+
+// Add sensor facts
+context.addLiteral(model.createProperty(PHOA + "heart_rate"), 95.0);
+context.addProperty(model.createProperty(PHOA + "location_type"), "hospital");</code></pre>
+
+        <h4>8.2.2 Dynamic Rule Loading</h4>
+        <p>
+          Rules are loaded from DynamoDB at runtime, not hardcoded:
+        </p>
+        <ul>
+          <li>Scan phoa-triggers table for all rules</li>
+          <li>For each user phobia, find matching rule</li>
+          <li>Apply tolerance-based matching for numeric sensors</li>
+          <li>Check text matching for mainTrigger in group messages</li>
+        </ul>
+
+        <h4>8.2.3 Inference Logic</h4>
+        <p>
+          The rule-based approach evaluates:
+        </p>
+        <pre><code>IF (user has phobia X) 
+   AND (≥60% sensors match rule thresholds)
+   AND (mainTrigger in group messages OR no mainTrigger)
+THEN
+   Generate alert with recommendations</code></pre>
+
+        <h4>8.2.4 Benefits</h4>
+        <ul>
+          <li><strong>Declarative:</strong> Rules defined as data, not code</li>
+          <li><strong>Dynamic:</strong> Rules can be modified without code changes</li>
+          <li><strong>Semantic:</strong> RDF triples enable reasoning and inference</li>
+          <li><strong>Scalable:</strong> New phobias and rules added via database</li>
+        </ul>
+      </section>
+
+      <section id="ai-rule-generation">
+        <h3>8.3 AI-Powered Rule Generation</h3>
+        <p>
+          Gemini 2.5 Flash generates sensor rules from phobia descriptions:
+        </p>
+        <ul>
+          <li>Input: Phobia name, trigger, description</li>
+          <li>Output: 7 Schema.org PropertyValue rules with sensor thresholds</li>
+          <li>Example: "blood phobia" → location_type="hospital", heart_rate=120, temperature=18</li>
+          <li>Generated rules stored in phoa-triggers for Jena inference</li>
+        </ul>
+      </section>
+
+      <section id="ml-integration">
+        <h3>8.4 Machine Learning Integration</h3>
+        <p>
+          PhoA utilizes deep learning through Google Gemini 2.5 Flash, a Large Language Model (LLM), for automated sensor rule generation. This demonstrates the application of machine learning techniques in the medical domain, fulfilling the bonus requirement for "using various deep/machine learning techniques".
+        </p>
+        
+        <h4>8.4.1 Transfer Learning Approach</h4>
+        <p>
+          The system leverages transfer learning by using Gemini's pre-trained medical knowledge without requiring custom dataset collection or training infrastructure. The LLM has been trained on vast medical literature and can generate realistic sensor thresholds based on psychological and physiological patterns.
+        </p>
+        
+        <h4>8.4.2 Rule Generation Process</h4>
+        <ol>
+          <li><strong>Input:</strong> Phobia name, psychological trigger, medical description</li>
+          <li><strong>LLM Processing:</strong> Gemini analyzes text and applies learned patterns from medical literature</li>
+          <li><strong>Output:</strong> 7 sensor rules with realistic thresholds (location, heart rate, temperature, noise, altitude, weather, season)</li>
+          <li><strong>Validation:</strong> Rules stored as Schema.org PropertyValue in DynamoDB</li>
+          <li><strong>Integration:</strong> Rules used by Apache Jena for inference</li>
+        </ol>
+        
+        <h4>8.4.3 Example Generation</h4>
+        <pre><code>Input:
+  Phobia: "blood phobia"
+  Trigger: "blood"
+  Description: "Fear of seeing blood or injuries"
+
+Gemini Output:
+  location_type: "hospital" (medical setting)
+  heart_rate: 120 BPM (elevated due to anxiety)
+  temperature: 18°C (cold medical environments)
+  noise_level: 55 dB (moderate hospital sounds)
+  is_night: null (time-independent)
+  season: null (season-independent)
+  altitude: null (altitude-independent)</code></pre>
+        
+        <h4>8.4.4 Benefits</h4>
+        <ul>
+          <li><strong>Automated:</strong> Generates rules for 156 phobias without manual input</li>
+          <li><strong>Evidence-based:</strong> Leverages medical knowledge from training data</li>
+          <li><strong>Scalable:</strong> Can generate rules for new phobias instantly</li>
+          <li><strong>Consistent:</strong> Applies same reasoning patterns across all phobias</li>
+        </ul>
+        
+        <p>
+          This integration demonstrates practical application of deep learning in healthcare, combining AI-generated rules with semantic web technologies and rule-based inference for intelligent phobia detection.
+        </p>
+      </section>
+    </section>
+
+    <section id="additional-bonuses">
+      <h2>9. Additional Bonus Features</h2>
+      
+      <section id="security-performance">
+        <h3>9.1 Security, Performance, and Interoperability</h3>
+        
+        <h4>9.1.1 Security Implementation</h4>
+        <ul>
+          <li><strong>HTTPS Everywhere:</strong> CloudFront enforces HTTPS with automatic HTTP→HTTPS redirect</li>
+          <li><strong>JWT Authentication:</strong> AWS Cognito provides secure token-based authentication with automatic expiration</li>
+          <li><strong>IAM Roles:</strong> Lambda functions use least-privilege IAM roles with specific DynamoDB and Lambda invoke permissions</li>
+          <li><strong>CORS Configuration:</strong> Properly configured to allow only authorized origins</li>
+          <li><strong>Input Validation:</strong> Server-side validation for all API inputs</li>
+          <li><strong>Admin Separation:</strong> Separate admin account with email verification</li>
+          <li><strong>Cost Protection:</strong> CloudWatch billing alarm at $1 threshold with SNS email notification</li>
+        </ul>
+
+        <h4>9.1.2 Performance Optimization</h4>
+        <ul>
+          <li><strong>CDN Distribution:</strong> CloudFront caches static assets globally, reducing latency</li>
+          <li><strong>Serverless Architecture:</strong> Lambda auto-scales based on demand, no idle server costs</li>
+          <li><strong>NoSQL Database:</strong> DynamoDB provides single-digit millisecond latency for queries</li>
+          <li><strong>Lazy Loading:</strong> React components load on-demand</li>
+          <li><strong>API Response Caching:</strong> Context data cached for 5 minutes in Lambda</li>
+          <li><strong>Optimized Queries:</strong> DynamoDB scan with FilterExpression to reduce data transfer</li>
+          <li><strong>Async Processing:</strong> Rule generation runs asynchronously (Event invocation)</li>
+        </ul>
+
+        <h4>9.1.3 Interoperability</h4>
+        <ul>
+          <li><strong>REST API:</strong> Standard HTTP methods (GET, POST, DELETE) for universal compatibility</li>
+          <li><strong>JSON Format:</strong> All responses in JSON for easy parsing by any client</li>
+          <li><strong>OpenAPI Specification:</strong> Complete API documentation in industry-standard format</li>
+          <li><strong>CORS Support:</strong> Cross-origin requests enabled for web and mobile clients</li>
+          <li><strong>Semantic Web Standards:</strong> RDF, SPARQL, Schema.org for data interoperability</li>
+          <li><strong>Multiple Data Sources:</strong> Integrates Wikidata, DBpedia, Open-Meteo, Nominatim via standard APIs</li>
+        </ul>
+      </section>
+
+      <section id="ux-ui">
+        <h3>9.2 User Experience and Interface Design</h3>
+        
+        <h4>9.2.1 Responsive Design</h4>
+        <ul>
+          <li><strong>Mobile-First:</strong> Interface optimized for mobile devices with touch-friendly controls</li>
+          <li><strong>Adaptive Layouts:</strong> Grid system adjusts to screen size (desktop, tablet, mobile)</li>
+          <li><strong>Touch Targets:</strong> Buttons and interactive elements sized for easy tapping (minimum 44x44px)</li>
+        </ul>
+
+        <h4>9.2.2 Accessibility Features</h4>
+        <ul>
+          <li><strong>Semantic HTML:</strong> Proper use of nav, section, article tags for screen readers</li>
+          <li><strong>Dark Mode:</strong> Reduces eye strain and accommodates light sensitivity</li>
+          <li><strong>Visual Feedback:</strong> Clear indication of interactive elements (hover states, active states)</li>
+          <li><strong>Color Contrast:</strong> High contrast between text and background for readability</li>
+          <li><strong>Keyboard Navigation:</strong> All interactive elements accessible via Tab key</li>
+        </ul>
+
+        <h4>9.2.3 User Interaction Patterns</h4>
+        <ul>
+          <li><strong>Progressive Disclosure:</strong> Complex features (QR codes, trigger history) hidden until requested</li>
+          <li><strong>Immediate Feedback:</strong> Loading states, success messages, error notifications</li>
+          <li><strong>Error Prevention:</strong> Input validation, confirmation dialogs for destructive actions</li>
+          <li><strong>Consistency:</strong> Uniform button styles, color scheme, and interaction patterns throughout</li>
+          <li><strong>Auto-Save:</strong> Phobia selections saved immediately to DynamoDB</li>
+        </ul>
+
+        <h4>9.2.4 Context-Aware UI</h4>
+        <ul>
+          <li><strong>Automatic Theme:</strong> Dark mode forced for users with heliophobia (light sensitivity)</li>
+          <li><strong>Smart Triggers:</strong> Alerts only when heart rate spikes (≥10 BPM), not constant polling</li>
+          <li><strong>Visual Indicators:</strong> Heart rate slider with gradient (green→yellow→red) for intuitive severity</li>
+        </ul>
+      </section>
+    </section>
+
     <section id="evaluation">
-      <h2>8. Evaluation</h2>
+      <h2>10. Evaluation</h2>
       
       <section id="requirements-compliance">
-        <h3>8.1 Requirements Compliance</h3>
+        <h3>10.1 Requirements Compliance</h3>
         <table>
           <thead>
             <tr>

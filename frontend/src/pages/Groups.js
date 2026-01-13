@@ -10,6 +10,8 @@ function Groups() {
   const [joinCode, setJoinCode] = useState('');
   const [showQR, setShowQR] = useState(null);
   const [reportTrigger, setReportTrigger] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [groupTriggers, setGroupTriggers] = useState([]);
 
   useEffect(() => {
     fetchMyGroups();
@@ -106,9 +108,40 @@ function Groups() {
       if (data.success) {
         alert('Alert sent to group members!');
         setReportTrigger('');
+        if (selectedGroup === groupId) fetchGroupTriggers(groupId);
       }
     } catch (err) {
       alert('Failed to report: ' + err.message);
+    }
+  };
+
+  const fetchGroupTriggers = async (groupId) => {
+    try {
+      const res = await fetch(`${API}/api/groups/${groupId}/messages`, {
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGroupTriggers(data.data);
+        setSelectedGroup(groupId);
+      }
+    } catch (err) {
+      console.error('Failed to fetch triggers:', err);
+    }
+  };
+
+  const deleteTrigger = async (groupId, timestamp) => {
+    try {
+      const res = await fetch(`${API}/api/groups/${groupId}/messages/${timestamp}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchGroupTriggers(groupId);
+      }
+    } catch (err) {
+      alert('Failed to delete: ' + err.message);
     }
   };
 
@@ -178,6 +211,13 @@ function Groups() {
               >
                 {showQR === group.id ? '✕ Hide QR' : '📱 Share QR Code'}
               </button>
+              <button 
+                onClick={() => fetchGroupTriggers(group.id)}
+                className="btn-secondary"
+                style={{marginTop: '5px'}}
+              >
+                📋 View Triggers
+              </button>
               {showQR === group.id && (
                 <div className="qr-modal">
                   <QRCodeSVG value={generateGroupURL(group)} size={180} />
@@ -202,6 +242,33 @@ function Groups() {
           ))}
         </div>
       </div>
+
+      {selectedGroup && (
+        <div className="members-section">
+          <h2>Group Triggers</h2>
+          <button onClick={() => setSelectedGroup(null)} className="btn-secondary" style={{marginBottom: '10px'}}>
+            ← Back to Groups
+          </button>
+          {groupTriggers.length === 0 ? (
+            <p>No triggers reported yet</p>
+          ) : (
+            <div className="members-grid">
+              {groupTriggers.map((trigger, i) => (
+                <div key={i} className="member-card">
+                  <h3>⚠️ {trigger.text}</h3>
+                  <button 
+                    onClick={() => deleteTrigger(selectedGroup, trigger.timestamp)}
+                    className="btn-disconnect"
+                    style={{marginTop: '10px'}}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
