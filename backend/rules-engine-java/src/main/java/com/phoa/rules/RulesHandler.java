@@ -118,12 +118,12 @@ public class RulesHandler implements RequestHandler<Map<String, Object>, Map<Str
     }
     
     private double getTolerance(String name) {
-        return switch (name) {
-            case "heart_rate" -> 10.0;
-            case "noise_level" -> 15.0;
-            case "temperature" -> 5.0;
-            case "altitude" -> 20.0;
-            default -> 0.0;
-        };
+        switch (name) {
+            case "heart_rate": return 10.0;
+            case "noise_level": return 15.0;
+            case "temperature": return 5.0;
+            case "altitude": return 20.0;
+            default: return 0.0;
+        }
     }
 }

@@ -17,24 +17,18 @@ export const sendContext = (ctx) => fetch(`${API}/api/context`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(ctx)
-}).then(r => r.json()).then(d => {
-  console.log('📍 Position:', ctx);
-  console.log('📦 Full response:', d);
-  console.log('🌤️ Weather data:', d.data.context.weather);
-  console.log('🌅 Sunrise/Sunset data:', d.data.context.sun);
-  console.log('🗺️ Location details:', d.data.context.location);
-  return d.data;
-});
+}).then(r => r.json()).then(d => d.data);
 
-export const getUserLocation = () => {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('Geolocation not supported'));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-      (err) => reject(err)
-    );
-  });
-};
+export const getAlerts = (phobias, context, groupMessages = []) => fetch(`${API}/api/alerts`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+  body: JSON.stringify({ phobias, context, groupMessages })
+}).then(r => r.json()).then(d => d.alerts || []);
+
+export const getUserLocation = () => new Promise((resolve, reject) => {
+  if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
+  navigator.geolocation.getCurrentPosition(
+    pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+    err => reject(err)
+  );
+});

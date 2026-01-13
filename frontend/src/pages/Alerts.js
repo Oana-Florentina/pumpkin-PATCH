@@ -1,144 +1,105 @@
 import React, { useState, useEffect } from 'react';
+import { getUserLocation, sendContext, getAlerts } from '../services/api';
+import { getHeartbeat, getNoiseLevel, isMicrophoneEnabled } from '../services/deviceSimulator';
 
 function Alerts({ selectedPhobias }) {
   const [alerts, setAlerts] = useState([]);
-  const [deviceAlerts, setDeviceAlerts] = useState([]);
-  const currentSeason = 'Spring';
-  const location = 'New York';
-
-  // Simulate device data
-  const [heartRate, setHeartRate] = useState(72);
+  const [context, setContext] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate heart rate changes
-    const interval = setInterval(() => {
-      const newRate = 70 + Math.floor(Math.random() * 30);
-      setHeartRate(newRate);
-
-      // Generate device-based alerts
-      const newDeviceAlerts = [];
-      
-      if (newRate > 90 && selectedPhobias.length > 0) {
-        newDeviceAlerts.push({
-          id: 'device-1',
-          type: 'warning',
-          title: 'Elevated Heart Rate Detected',
-          message: `Heart rate at ${newRate} BPM. Possible anxiety trigger detected by smartwatch.`,
-          timestamp: new Date().toLocaleString(),
-          source: 'Apple Watch'
+    const fetchContext = async () => {
+      try {
+        const loc = await getUserLocation();
+        const data = await sendContext({ ...loc, timestamp: new Date().toISOString() });
+        setContext({
+          location_type: data.context?.location?.type || data.context?.location?.amenity || null,
+          locationName: data.context?.location?.address?.city || 'Unknown',
+          altitude: data.context?.weather?.elevation || null,
+          temperature: data.context?.weather?.temperature_2m || null,
+          weather_code: data.context?.weather?.weather_code || null,
+          season: getSeason(),
+          is_night: isNight(data.context?.sun)
         });
+      } catch (e) {
+        console.log('Context error:', e.message);
       }
+      setLoading(false);
+    };
+    fetchContext();
+  }, []);
 
-      if (selectedPhobias.includes(2)) { // Claustrophobia
-        newDeviceAlerts.push({
-          id: 'device-2',
-          type: 'warning',
-          title: 'Small Space Detected',
-          message: 'GPS data indicates you are in a confined area. Claustrophobia alert activated.',
-          timestamp: new Date().toLocaleString(),
-          source: 'GPS Sensor'
-        });
+  useEffect(() => {
+    if (selectedPhobias.length === 0 || loading) return;
+
+    const checkAlerts = async () => {
+      const sensorContext = {
+        ...context,
+        heart_rate: getHeartbeat(),
+        noise_level: isMicrophoneEnabled() ? getNoiseLevel() : null
+      };
+
+      try {
+        const newAlerts = await getAlerts(selectedPhobias, sensorContext, []);
+        setAlerts(newAlerts);
+      } catch (e) {
+        console.log('Alerts error:', e.message);
       }
+    };
 
-      setDeviceAlerts(newDeviceAlerts);
-    }, 5000);
-
+    checkAlerts();
+    const interval = setInterval(checkAlerts, 10000);
     return () => clearInterval(interval);
-  }, [selectedPhobias]);
+  }, [selectedPhobias, context, loading]);
 
-  useEffect(() => {
-    // Generate context-aware alerts based on selected phobias
-    const newAlerts = [];
-    
-    if (selectedPhobias.includes(6)) { // Pollen allergy
-      if (currentSeason === 'Spring') {
-        newAlerts.push({
-          id: 1,
-          type: 'warning',
-          title: 'High Pollen Alert',
-          message: `Pollen levels are high in ${location} during Spring. Consider taking antihistamines.`,
-          timestamp: new Date().toLocaleString()
-        });
-      }
-    }
+  const getSeason = () => {
+    const month = new Date().getMonth();
+    if (month >= 2 && month <= 4) return 'Spring';
+    if (month >= 5 && month <= 7) return 'Summer';
+    if (month >= 8 && month <= 10) return 'Fall';
+    return 'Winter';
+  };
 
-    if (selectedPhobias.includes(2)) { // Claustrophobia
-      newAlerts.push({
-        id: 2,
-        type: 'info',
-        title: 'Location Context',
-        message: 'Avoid small enclosed spaces. Practice breathing exercises if needed.',
-        timestamp: new Date().toLocaleString()
-      });
-    }
-
-    if (selectedPhobias.includes(4)) { // Social phobia
-      newAlerts.push({
-        id: 3,
-        type: 'tip',
-        title: 'Social Event Reminder',
-        message: 'Prepare relaxation techniques before social gatherings.',
-        timestamp: new Date().toLocaleString()
-      });
-    }
-
-    setAlerts(newAlerts);
-  }, [selectedPhobias]);
-
-  const alertHistory = [
-    { id: 4, type: 'warning', title: 'Previous Alert', message: 'High pollen detected yesterday', timestamp: 'Jan 10, 2026' },
-    { id: 5, type: 'info', title: 'Reminder', message: 'Take your medication', timestamp: 'Jan 9, 2026' },
-    { id: 6, type: 'warning', title: 'Device Alert', message: 'Elevated stress levels detected by smartwatch', timestamp: 'Jan 8, 2026' }
-  ];
-
-  const allActiveAlerts = [...deviceAlerts, ...alerts];
+  const isNight = (sun) => {
+    if (!sun) return false;
+    const now = new Date();
+    return now < new Date(sun.sunrise) || now > new Date(sun.sunset);
+  };
 
   return (
     <div className="page-container">
       <h1>Alerts & Notifications</h1>
       <div className="context-display">
-        <p>📍 Location: {location}</p>
-        <p>🌸 Season: {currentSeason}</p>
-        <p>📅 {new Date().toLocaleDateString()}</p>
-        <p>❤️ Heart Rate: {heartRate} BPM</p>
+        <p>📍 Location: {context.locationName || 'Loading...'}</p>
+        <p>🏷️ Type: {context.location_type || 'Unknown'}</p>
+        <p>🌸 Season: {context.season}</p>
+        <p>🌡️ Temperature: {context.temperature !== null ? `${context.temperature}°C` : 'N/A'}</p>
+        <p>⛰️ Altitude: {context.altitude !== null ? `${context.altitude}m` : 'N/A'}</p>
       </div>
 
       <section className="alerts-section">
         <h2>Active Alerts</h2>
-        {allActiveAlerts.length === 0 ? (
+        {loading ? (
+          <div className="alert-card info"><p>Loading...</p></div>
+        ) : alerts.length === 0 ? (
           <div className="alert-card success">
             <h3>✓ No Active Triggers</h3>
             <p>You're all clear! No phobia triggers detected in your current context.</p>
           </div>
         ) : (
-          allActiveAlerts.map(alert => (
-            <div key={alert.id} className={`alert-card ${alert.type}`}>
-              <h3>⚠️ {alert.title}</h3>
+          alerts.map(alert => (
+            <div key={alert.id} className={`alert-card ${alert.severity}`}>
+              <h3>⚠️ {alert.phobiaName}</h3>
               <p>{alert.message}</p>
-              {alert.source && <span className="alert-source">📱 Source: {alert.source}</span>}
-              <span className="timestamp">{alert.timestamp}</span>
+              <span className="timestamp">{new Date(alert.createdAt).toLocaleString()}</span>
             </div>
           ))
         )}
       </section>
 
-      <section className="alerts-section">
-        <h2>Alert History</h2>
-        {alertHistory.map(alert => (
-          <div key={alert.id} className={`alert-card ${alert.type} history`}>
-            <h3>{alert.title}</h3>
-            <p>{alert.message}</p>
-            <span className="timestamp">{alert.timestamp}</span>
-          </div>
-        ))}
-      </section>
-
       <div className="device-info-box">
-        <h3>📱 Connected Devices</h3>
-        <p>Real-time monitoring from Apple Watch Series 8</p>
-        <p className="device-note">
-          💡 Your smartwatch monitors heart rate, location, and stress levels to provide context-aware phobia alerts
-        </p>
+        <h3>📱 How Alerts Work</h3>
+        <p>Alerts are generated by matching your phobias with sensor data (location, weather, heart rate, noise) and group messages.</p>
       </div>
     </div>
   );

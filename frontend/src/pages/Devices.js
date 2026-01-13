@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getHeartbeat, getAltitude, getNoiseLevel } from '../services/deviceSimulator';
+import { getHeartbeat, getNoiseLevel, startMicrophone, stopMicrophone, isMicrophoneEnabled } from '../services/deviceSimulator';
 import { getUserLocation, sendContext } from '../services/api';
 
 function Devices() {
@@ -9,44 +9,38 @@ function Devices() {
     { id: 3, name: 'Samsung Galaxy Watch', type: 'smartwatch', connected: false, battery: 0 }
   ]);
 
+  const [micEnabled, setMicEnabled] = useState(false);
   const [deviceData, setDeviceData] = useState({
     heartRate: 72,
-    location: { lat: 40.7128, lng: -74.0060, name: 'New York, NY', type: 'Loading...' },
-    environmentalData: {
-      altitude: '10m',
-      temperature: '22°C',
-      noiseLevel: '45dB',
-      sunrise: 'Loading...',
-      sunset: 'Loading...'
-    }
+    location: { name: 'Loading...', type: 'Loading...' },
+    altitude: null,
+    temperature: null,
+    noiseLevel: null,
+    sunrise: null,
+    sunset: null,
+    weatherCode: null
   });
 
-  // Fetch sunrise/sunset data
   useEffect(() => {
     getUserLocation()
       .then(loc => sendContext({ ...loc, timestamp: new Date().toISOString() }))
       .then(data => {
-        const sunData = data.context.sun;
-        const locationData = data.context.location;
+        const weather = data.context?.weather;
+        const sun = data.context?.sun;
+        const loc = data.context?.location;
         
-        if (sunData) {
-          const sunrise = new Date(sunData.sunrise);
-          const sunset = new Date(sunData.sunset);
-          
-          setDeviceData(prev => ({
-            ...prev,
-            location: {
-              ...prev.location,
-              type: locationData?.type || locationData?.amenity || 'Unknown',
-              name: locationData?.address?.city || locationData?.address?.town || 'Unknown'
-            },
-            environmentalData: {
-              ...prev.environmentalData,
-              sunrise: sunrise.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-              sunset: sunset.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-            }
-          }));
-        }
+        setDeviceData(prev => ({
+          ...prev,
+          location: {
+            name: loc?.address?.city || loc?.address?.town || 'Unknown',
+            type: loc?.type || loc?.amenity || 'Unknown'
+          },
+          altitude: weather?.elevation || null,
+          temperature: weather?.temperature_2m || null,
+          weatherCode: weather?.weather_code || null,
+          sunrise: sun?.sunrise ? new Date(sun.sunrise).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
+          sunset: sun?.sunset ? new Date(sun.sunset).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null
+        }));
       })
       .catch(err => console.log('Location error:', err.message));
   }, []);
@@ -56,11 +50,7 @@ function Devices() {
       setDeviceData(prev => ({
         ...prev,
         heartRate: getHeartbeat(),
-        environmentalData: {
-          ...prev.environmentalData,
-          altitude: `${getAltitude()}m`,
-          noiseLevel: `${getNoiseLevel()}dB`
-        }
+        noiseLevel: getNoiseLevel()
       }));
     }, 3000);
     return () => clearInterval(interval);
@@ -72,6 +62,16 @@ function Devices() {
         ? { ...device, connected: !device.connected, battery: device.connected ? 0 : 85 }
         : device
     ));
+  };
+
+  const toggleMicrophone = async () => {
+    if (isMicrophoneEnabled()) {
+      stopMicrophone();
+      setMicEnabled(false);
+    } else {
+      const ok = await startMicrophone();
+      setMicEnabled(ok);
+    }
   };
 
   const connectedDevice = devices.find(d => d.connected);
@@ -93,15 +93,8 @@ function Devices() {
                 </span>
               </div>
               <p className="device-type">{device.type}</p>
-              {device.connected && (
-                <div className="battery-info">
-                  <span>🔋 Battery: {device.battery}%</span>
-                </div>
-              )}
-              <button 
-                onClick={() => toggleDevice(device.id)} 
-                className={device.connected ? 'btn-disconnect' : 'btn-connect'}
-              >
+              {device.connected && <div className="battery-info"><span>🔋 Battery: {device.battery}%</span></div>}
+              <button onClick={() => toggleDevice(device.id)} className={device.connected ? 'btn-disconnect' : 'btn-connect'}>
                 {device.connected ? 'Disconnect' : 'Connect'}
               </button>
             </div>
@@ -118,7 +111,6 @@ function Devices() {
                 <h3>❤️ Heart Rate</h3>
                 <p className="data-value" property="value">{deviceData.heartRate} BPM</p>
               </div>
-
               <div className="data-card">
                 <h3>📍 Location</h3>
                 <p className="data-value">{deviceData.location.name}</p>
@@ -136,23 +128,28 @@ function Devices() {
               </div>
               <div className="env-item">
                 <span className="env-label">⛰️ Altitude</span>
-                <span className="env-value">{deviceData.environmentalData.altitude}</span>
+                <span className="env-value">{deviceData.altitude !== null ? `${deviceData.altitude}m` : 'N/A'}</span>
               </div>
               <div className="env-item">
                 <span className="env-label">🌡️ Temperature</span>
-                <span className="env-value">{deviceData.environmentalData.temperature}</span>
+                <span className="env-value">{deviceData.temperature !== null ? `${deviceData.temperature}°C` : 'N/A'}</span>
               </div>
               <div className="env-item">
                 <span className="env-label">🔊 Noise Level</span>
-                <span className="env-value">{deviceData.environmentalData.noiseLevel}</span>
+                <span className="env-value">
+                  {deviceData.noiseLevel !== null ? `${deviceData.noiseLevel}dB` : 'Mic off'}
+                </span>
+                <button onClick={toggleMicrophone} className={micEnabled ? 'btn-disconnect' : 'btn-connect'} style={{marginTop: '5px', fontSize: '12px'}}>
+                  {micEnabled ? '🎤 Stop' : '🎤 Start'}
+                </button>
               </div>
               <div className="env-item">
                 <span className="env-label">🌅 Sunrise</span>
-                <span className="env-value">{deviceData.environmentalData.sunrise}</span>
+                <span className="env-value">{deviceData.sunrise || 'N/A'}</span>
               </div>
               <div className="env-item">
                 <span className="env-label">🌇 Sunset</span>
-                <span className="env-value">{deviceData.environmentalData.sunset}</span>
+                <span className="env-value">{deviceData.sunset || 'N/A'}</span>
               </div>
             </div>
             <p className="env-note">

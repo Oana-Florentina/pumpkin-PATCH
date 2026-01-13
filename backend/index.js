@@ -9,6 +9,7 @@ app.use('/api/phobias', require('./routes/phobias'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/context', require('./routes/context'));
 app.use('/api/groups', require('./routes/groups'));
+app.use('/api/alerts', require('./routes/alerts'));
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
@@ -20,4 +21,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-// deploy test

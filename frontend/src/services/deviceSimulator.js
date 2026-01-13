@@ -1,19 +1,40 @@
-const getHeartbeat = () => {
-  const baseBPM = 70;
-  const variation = Math.floor(Math.random() * 30);
-  return baseBPM + variation;
+let micStream = null;
+let noiseLevel = null;
+
+const getHeartbeat = () => 70 + Math.floor(Math.random() * 30);
+
+const getNoiseLevel = () => noiseLevel;
+
+const isMicrophoneEnabled = () => micStream !== null;
+
+const startMicrophone = async () => {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const ctx = new AudioContext();
+    const analyser = ctx.createAnalyser();
+    ctx.createMediaStreamSource(micStream).connect(analyser);
+    analyser.fftSize = 256;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    
+    const update = () => {
+      if (!micStream) return;
+      analyser.getByteFrequencyData(data);
+      noiseLevel = Math.round(20 + (data.reduce((a, b) => a + b) / data.length) * 0.4);
+      requestAnimationFrame(update);
+    };
+    update();
+    return true;
+  } catch (e) {
+    return false;
+  }
 };
 
-const getAltitude = () => {
-  const baseAltitude = 10;
-  const variation = Math.floor(Math.random() * 50);
-  return baseAltitude + variation;
+const stopMicrophone = () => {
+  if (micStream) {
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+  noiseLevel = null;
 };
 
-const getNoiseLevel = () => {
-  const baseNoise = 40;
-  const variation = Math.floor(Math.random() * 40);
-  return baseNoise + variation;
-};
-
-export { getHeartbeat, getAltitude, getNoiseLevel };
+export { getHeartbeat, getNoiseLevel, startMicrophone, stopMicrophone, isMicrophoneEnabled };
