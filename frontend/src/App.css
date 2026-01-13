@@ -107,6 +107,14 @@ body.dark-mode .pagination-info {
   color: #9ca3af;
 }
 
+body.dark-mode .env-label {
+  color: #d1d5db !important;
+}
+
+body.dark-mode .env-value {
+  color: #f3f4f6 !important;
+}
+
 .App {
   min-height: 100vh;
 }

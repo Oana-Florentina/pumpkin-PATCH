@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Remedies from './pages/Remedies';
 import Alerts from './pages/Alerts';
 import Groups from './pages/Groups';
+import JoinGroup from './pages/JoinGroup';
 import Devices from './pages/Devices';
 import Admin from './pages/Admin';
 import { getUserLocation, sendContext } from './services/api';
@@ -75,6 +76,7 @@ function App() {
           <Route path="/remedies" element={user ? <Remedies selectedPhobias={selectedPhobias} /> : <Navigate to="/login" />} />
           <Route path="/alerts" element={user ? <Alerts selectedPhobias={selectedPhobias} /> : <Navigate to="/login" />} />
           <Route path="/groups" element={user ? <Groups /> : <Navigate to="/login" />} />
+          <Route path="/join-group" element={user ? <JoinGroup /> : <Navigate to="/login" />} />
           <Route path="/devices" element={user ? <Devices /> : <Navigate to="/login" />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
