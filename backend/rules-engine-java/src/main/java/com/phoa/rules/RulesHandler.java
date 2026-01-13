@@ -36,6 +36,7 @@ public class RulesHandler implements RequestHandler<Map<String, Object>, Map<Str
         }
         
         sensors.forEach((name, value) -> {
+            if (value == null) return;
             if (value instanceof Number) {
                 context.addLiteral(model.createProperty(PHOA + name), ((Number) value).doubleValue());
             } else if (value instanceof Boolean) {
