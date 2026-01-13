@@ -80,8 +80,10 @@ This project was developed as part of the Web Application Development (WADe) cou
 ### Backend
 - **Runtime**: Node.js with Express 5.2.1
 - **Deployment**: AWS Lambda (serverless)
-- **Database**: AWS DynamoDB
+- **Database**: Apache Jena Fuseki (RDF triple store)
 - **Authentication**: AWS Cognito
+- **Rule Engine**: Apache Jena GenericRuleReasoner
+- **AI**: Google Gemini 2.5 Flash for rule generation
 
 ### APIs 
 - **Open-Meteo**: Weather data
@@ -93,6 +95,8 @@ This project was developed as part of the Web Application Development (WADe) cou
 - **Query Language**: SPARQL
 - **Markup**: RDFa in HTML5
 - **Knowledge Bases**: DBpedia, Wikidata
+- **Triple Store**: Apache Jena Fuseki
+- **Reasoner**: Apache Jena GenericRuleReasoner
 
 ---
 
@@ -149,7 +153,8 @@ Runs on `http://localhost:3001`
 The application is deployed using GitHub Actions:
 - **Frontend**: AWS S3 + CloudFront
 - **Backend**: AWS Lambda + API Gateway
-- **Database**: AWS DynamoDB
+- **Database**: Apache Jena Fuseki on AWS EC2
+- **Live URL**: https://d3pnfxsee44y6e.cloudfront.net
 
 ---
 
@@ -158,15 +163,9 @@ The application is deployed using GitHub Actions:
 ### Project Deliverables
 
 - **[Technical Report](scholarly-report.html)** - Scholarly HTML format with architecture diagrams
-- **[SPARQL Queries](frontend/SPARQL_QUERIES.md)** - DBpedia and Wikidata integration
-- **[API Documentation](DOCUMENTATION.md)** - Complete technical documentation
-- **[Architecture Diagram](scholarly-report.html#architecture)** - System design and data flow
-
-### Key Documents
-
-- **Diagrams**: System architecture visualization (in Scholarly HTML report)
-- **User Guide**: How to use PhoA (coming soon)
-- **Video Demo**: Application walkthrough (coming soon)
+- **[User Guide](phoa/phoa-user-guide.html)** - How to use PhoA
+- **[Demo Video](https://github.com/Oana-Florentina/pumpkin-PATCH/blob/main/phoa/demo-good.mov)** - Application walkthrough
+- **[API Documentation](api-docs.html)** - OpenAPI specification
 
 ---
 
@@ -195,15 +194,17 @@ The application is deployed using GitHub Actions:
 │  │  Routes & Services │  │
 │  │  - Phobias         │  │
 │  │  - Context         │  │
-│  │  - Users           │  │
+│  │  - Alerts          │  │
 │  │  - Groups          │  │
 │  └────────────────────┘  │
 └───┬──────────────────┬───┘
     │                  │
     ▼                  ▼
-┌─────────┐      ┌──────────────┐
-│ Cognito │      │  DynamoDB    │
-└─────────┘      └──────────────┘
+┌─────────┐      ┌──────────────────┐
+│ Cognito │      │  Jena Fuseki     │
+└─────────┘      │  (RDF Store)     │
+                 │  + Reasoner      │
+                 └──────────────────┘
     │
     ▼
 ┌──────────────────────────┐
@@ -213,6 +214,7 @@ The application is deployed using GitHub Actions:
 │  - Nominatim             │
 │  - DBpedia (SPARQL)      │
 │  - Wikidata (SPARQL)     │
+│  - Google Gemini AI      │
 └──────────────────────────┘
 ```
 
@@ -248,34 +250,21 @@ LIMIT 10
 
 ---
 
-## 🧪 Testing
-
-Run frontend tests:
-```bash
-cd frontend
-npm test
-```
-
-Run backend tests:
-```bash
-cd backend
-npm test
-```
-
----
-
 ## 📊 Project Status
 
 - ✅ Frontend development complete
 - ✅ Backend API implementation complete
 - ✅ AWS Cognito authentication integrated
 - ✅ Semantic web integration (RDF, SPARQL)
+- ✅ Apache Jena Fuseki triple store
+- ✅ Rule-based reasoning with Jena
+- ✅ AI-powered rule generation (Gemini)
 - ✅ Context-aware alert system
 - ✅ Device simulation
 - ✅ Dark mode implementation
-- 🚧 Technical report (in progress)
-- 📝 User guide (planned)
-- 🎥 Video demo (planned)
+- ✅ Technical report complete
+- ✅ User guide complete
+- ✅ Video demo complete
 
 ---
 
@@ -285,9 +274,10 @@ npm test
 - Backend architecture and AWS deployment
 - Semantic web integration (RDF, SPARQL)
 - Authentication system (AWS Cognito)
-- DynamoDB database design
+- Apache Jena Fuseki setup and configuration
 - Backend API routes and microservices
-- Rule-based alert system logic
+- Rule-based alert system with Jena reasoner
+- AI integration (Google Gemini)
 
 **Oana-Florentina Dumitriu**
 - Frontend development (React components)
@@ -298,6 +288,7 @@ npm test
 - Context-aware alert implementation
 - RDFa markup and Schema.org integration
 - Time-based and environmental services
+- User guide and documentation
 
 ---
 
@@ -310,7 +301,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🔗 Links
 
 - **Repository**: [https://github.com/Oana-Florentina/pumpkin-PATCH](https://github.com/Oana-Florentina/pumpkin-PATCH)
-- **Live Demo**: [Coming Soon]
+- **Live Demo**: [https://d3pnfxsee44y6e.cloudfront.net](https://d3pnfxsee44y6e.cloudfront.net)
+- **Demo Video**: [https://github.com/Oana-Florentina/pumpkin-PATCH/blob/main/phoa/demo-good.mov](https://github.com/Oana-Florentina/pumpkin-PATCH/blob/main/phoa/demo-good.mov)
 - **Technical Report**: [scholarly-report.html](scholarly-report.html)
 - **University**: [Alexandru Ioan Cuza University of Iași](https://www.info.uaic.ro/)
 - **Course**: Web Application Development (WADe)

@@ -55,6 +55,12 @@
           <a href="https://opensource.org/licenses/MIT">MIT License</a>
         </p>
       </section>
+      <section>
+        <h2>Demo Video</h2>
+        <p>
+          <a href="https://github.com/Oana-Florentina/pumpkin-PATCH/blob/main/phoa/demo-good.mov">View Demo Video</a>
+        </p>
+      </section>
     </div>
   </header>
 
@@ -259,16 +265,6 @@
             <text x="755" y="480" font-size="11">External</text>
           </svg>
           <figcaption>Figure 1: PhoA Microservices Architecture with Apache Jena Fuseki RDF Triple Store</figcaption>
-        </figure>
-      </section>
-
-      <section id="components">
-        <h3>3.2 Components</h3>
-            <text x="380" y="160" font-size="10">queries</text>
-            <text x="500" y="180" font-size="10">AI</text>
-            <text x="380" y="230" font-size="10">JWT</text>
-          </svg>
-          <figcaption>Figure 1: PhoA System Architecture with Apache Jena Fuseki RDF Triple Store</figcaption>
         </figure>
       </section>
 
@@ -866,19 +862,6 @@ phoa:rule/Q886731 a schema:PropertyValueSpecification ;
           <li>Session management</li>
         </ul>
       </section>
-
-      <section id="deployment">
-        <h3>7.3 Deployment</h3>
-        <p>
-          The application is deployed using:
-        </p>
-        <ul>
-          <li><strong>Frontend:</strong> AWS S3 + CloudFront</li>
-          <li><strong>Backend:</strong> AWS Lambda with API Gateway</li>
-          <li><strong>RDF Storage:</strong> Apache Jena Fuseki (EC2)</li>
-          <li><strong>CI/CD:</strong> GitHub Actions workflows</li>
-        </ul>
-      </section>
     </section>
 
     <section id="bonus-features">
@@ -1012,7 +995,7 @@ Gemini Output:
         <ul>
           <li><strong>HTTPS Everywhere:</strong> CloudFront enforces HTTPS with automatic HTTP→HTTPS redirect</li>
           <li><strong>JWT Authentication:</strong> AWS Cognito provides secure token-based authentication with automatic expiration</li>
-          <li><strong>IAM Roles:</strong> Lambda functions use least-privilege IAM roles with specific DynamoDB and Lambda invoke permissions</li>
+          <li><strong>IAM Roles:</strong> Lambda functions use least-privilege IAM roles with specific Lambda invoke permissions</li>
           <li><strong>CORS Configuration:</strong> Properly configured to allow only authorized origins</li>
           <li><strong>Input Validation:</strong> Server-side validation for all API inputs</li>
           <li><strong>Admin Separation:</strong> Separate admin account with email verification</li>
@@ -1023,10 +1006,9 @@ Gemini Output:
         <ul>
           <li><strong>CDN Distribution:</strong> CloudFront caches static assets globally, reducing latency</li>
           <li><strong>Serverless Architecture:</strong> Lambda auto-scales based on demand, no idle server costs</li>
-          <li><strong>NoSQL Database:</strong> DynamoDB provides single-digit millisecond latency for queries</li>
+          <li><strong>RDF Triple Store:</strong> Apache Jena Fuseki provides SPARQL query interface with millisecond latency</li>
           <li><strong>Lazy Loading:</strong> React components load on-demand</li>
           <li><strong>API Response Caching:</strong> Context data cached for 5 minutes in Lambda</li>
-          <li><strong>Optimized Queries:</strong> DynamoDB scan with FilterExpression to reduce data transfer</li>
           <li><strong>Async Processing:</strong> Rule generation runs asynchronously (Event invocation)</li>
         </ul>
 
@@ -1066,7 +1048,7 @@ Gemini Output:
           <li><strong>Immediate Feedback:</strong> Loading states, success messages, error notifications</li>
           <li><strong>Error Prevention:</strong> Input validation, confirmation dialogs for destructive actions</li>
           <li><strong>Consistency:</strong> Uniform button styles, color scheme, and interaction patterns throughout</li>
-          <li><strong>Auto-Save:</strong> Phobia selections saved immediately to DynamoDB</li>
+          <li><strong>Auto-Save:</strong> Phobia selections saved immediately to Fuseki RDF store</li>
         </ul>
 
         <h4>9.2.4 Context-Aware UI</h4>
@@ -1078,93 +1060,21 @@ Gemini Output:
       </section>
     </section>
 
-    <section id="evaluation">
-      <h2>10. Evaluation</h2>
-      
-      <section id="requirements-compliance">
-        <h3>10.1 Requirements Compliance</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Requirement</th>
-              <th>Status</th>
-              <th>Implementation</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>RDF Data Modeling</td>
-              <td>✅ Complete</td>
-              <td>Schema.org vocabulary, RDFa markup</td>
-            </tr>
-            <tr>
-              <td>SPARQL Queries</td>
-              <td>✅ Complete</td>
-              <td>5+ queries for DBpedia/Wikidata</td>
-            </tr>
-            <tr>
-              <td>Context-Aware Alerts</td>
-              <td>✅ Complete</td>
-              <td>Time, location, weather, device sensors</td>
-            </tr>
-            <tr>
-              <td>Multi-Device Support</td>
-              <td>✅ Complete</td>
-              <td>Web + smartwatch simulation</td>
-            </tr>
-            <tr>
-              <td>User/Group Management</td>
-              <td>✅ Complete</td>
-              <td>AWS Cognito + DynamoDB</td>
-            </tr>
-            <tr>
-              <td>Rule-Based Reasoning</td>
-              <td>✅ Complete</td>
-              <td>IF-THEN rules for alerts</td>
-            </tr>
-            <tr>
-              <td>Cloud Deployment</td>
-              <td>✅ Complete</td>
-              <td>AWS Lambda, DynamoDB, Cognito</td>
-            </tr>
-            <tr>
-              <td>Open Source</td>
-              <td>✅ Complete</td>
-              <td>GitHub repository, MIT License</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section id="bonus-features">
-        <h3>8.2 Bonus Features</h3>
-        <ul>
-          <li>✅ Rule-based approach for intelligent alerts</li>
-          <li>✅ Cloud-based deployment (AWS)</li>
-          <li>✅ Microservices architecture</li>
-          <li>✅ Multiple API integrations (weather, location, astronomy)</li>
-          <li>✅ Real-time device monitoring</li>
-          <li>✅ Responsive design with dark mode</li>
-        </ul>
-      </section>
-    </section>
-
     <section id="conclusions">
-      <h2>9. Conclusions and Future Work</h2>
+      <h2>10. Conclusions and Future Work</h2>
       
       <section id="conclusions-summary">
-        <h3>9.1 Summary</h3>
+        <h3>10.1 Summary</h3>
         <p>
           PhoA successfully demonstrates the integration of semantic web technologies with modern cloud architecture to create an intelligent, context-aware phobia management system. The application meets all project requirements including RDF data modeling, SPARQL integration, context-aware alerts, and multi-device support.
         </p>
       </section>
 
       <section id="future-work">
-        <h3>9.2 Future Enhancements</h3>
+        <h3>10.2 Future Enhancements</h3>
         <ul>
           <li><strong>Real Device Integration:</strong> Connect actual smartwatches via Web Bluetooth API</li>
           <li><strong>Machine Learning:</strong> Predict phobia triggers based on historical patterns</li>
-          <li><strong>Gamification:</strong> Serious games for exposure therapy</li>
           <li><strong>Social Features:</strong> Share progress with support groups</li>
           <li><strong>Offline Support:</strong> Service workers for offline functionality</li>
           <li><strong>Multi-language:</strong> Internationalization (i18n) support</li>
@@ -1228,7 +1138,7 @@ Gemini Output:
       <section id="demo">
         <h3>B. Live Demo</h3>
         <p>
-          [URL to be added after deployment]
+          <a href="https://github.com/Oana-Florentina/pumpkin-PATCH/blob/main/phoa/demo-good.mov">View Demo Video</a>
         </p>
       </section>
 
@@ -1263,9 +1173,9 @@ Gemini Output:
           <li>Context-aware alert implementation (frontend)</li>
           <li>Schema.org RDFa integration in HTML pages</li>
           <li>Time-based and environmental services</li>
-          <li>README documentation and user guide</li>
-          <li>Video demonstration and user guide (phoa-user-guide.html)</li>
-          <li>Screenshots and visual documentation</li>
+          <li>README documentation</li>
+          <li>Video demonstration and </li>
+          <li>User guide (phoa-user-guide.html)</li>
           <li>Project documentation contributions</li>
         </ul>
       </section>
