@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
-const { getUserPhobias, addUserPhobia, removeUserPhobia } = require('../services/dbService');
+const { getUserPhobias, addUserPhobia, removeUserPhobia } = require('../services/rdfService');
 
 router.get('/me/phobias', authMiddleware, async (req, res) => {
   const phobias = await getUserPhobias(req.userEmail);

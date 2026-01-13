@@ -201,9 +201,9 @@ function Groups() {
         <h2>My Groups ({groups.length})</h2>
         <div className="members-grid">
           {groups.map(group => (
-            <div key={group.id} className="member-card">
+            <div key={group.id} className="member-card" vocab="http://schema.org/" typeof="Organization">
               <div className="member-header">
-                <h3>👥 {group.name}</h3>
+                <h3 property="name">👥 {group.name}</h3>
               </div>
               <button 
                 onClick={() => setShowQR(showQR === group.id ? null : group.id)}

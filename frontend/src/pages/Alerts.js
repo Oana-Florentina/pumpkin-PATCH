@@ -129,11 +129,16 @@ function Alerts({ selectedPhobias }) {
       noise_level: isMicrophoneEnabled() ? getNoiseLevel() : null
     };
 
-    console.log('Checking alerts:', { phobias: selectedPhobias, context: sensorContext });
+    console.log('🔍 Checking alerts at:', new Date().toLocaleTimeString());
+    console.log('Phobias:', selectedPhobias);
+    console.log('Context:', sensorContext);
+    console.log('Group messages:', groupMessages.length);
 
+    const startTime = Date.now();
     try {
       const newAlerts = await getAlerts(selectedPhobias, sensorContext, groupMessages);
-      console.log('Alerts received:', newAlerts);
+      const duration = Date.now() - startTime;
+      console.log(`✅ Alerts received in ${duration}ms:`, newAlerts);
       setAlerts(newAlerts);
       
       if (newAlerts.length > 0) {
@@ -292,9 +297,9 @@ function Alerts({ selectedPhobias }) {
           </div>
         ) : (
           alerts.map(alert => (
-            <div key={alert.id} className={`alert-card ${alert.severity}`}>
-              <h3>⚠️ {alert.phobiaName}</h3>
-              <p>{alert.message}</p>
+            <div key={alert.id} className={`alert-card ${alert.severity}`} vocab="http://schema.org/" typeof="MedicalRiskFactor">
+              <h3 property="name">⚠️ {alert.phobiaName}</h3>
+              <p property="description">{alert.message}</p>
               {alert.recommendations && alert.recommendations.length > 0 && (
                 <div style={{marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)'}}>
                   <strong>Recommendations:</strong>

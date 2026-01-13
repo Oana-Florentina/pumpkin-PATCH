@@ -1,12 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
-const { createGroup, getGroup, addGroupMember, getUserGroups } = require('../services/dbService');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
-
-const db = DynamoDBDocumentClient.from(new DynamoDBClient({ region: 'us-east-1' }));
-const TABLE = 'phoa-data';
+const { createGroup, getGroup, addGroupMember, getUserGroups, getGroupMessages, addGroupMessage, deleteGroupMessage } = require('../services/rdfService');
 
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -53,40 +48,9 @@ router.post('/:id/report', authMiddleware, async (req, res) => {
   if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
   if (!group.members.includes(req.userEmail)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
   
-  // Verifică care membri au fobii cu acest trigger
-  const { getUserPhobias } = require('../services/dbService');
-  const { ScanCommand } = require('@aws-sdk/lib-dynamodb');
+  await addGroupMessage(req.params.id, req.userEmail, trigger);
   
-  let affectedCount = 0;
-  for (const memberId of group.members) {
-    const userPhobias = await getUserPhobias(memberId);
-    // Verifică dacă vreuna din fobiile userului are trigger-ul raportat
-    const { Items } = await db.send(new ScanCommand({
-      TableName: TABLE,
-      FilterExpression: 'begins_with(PK, :pk) AND contains(#t, :trigger)',
-      ExpressionAttributeNames: { '#t': 'trigger' },
-      ExpressionAttributeValues: { ':pk': 'PHOBIA#', ':trigger': trigger.toLowerCase() }
-    }));
-    
-    if (Items && Items.length > 0 && userPhobias.length > 0) {
-      affectedCount++;
-    }
-  }
-  
-  // Salvează raportul
-  await db.send(new PutCommand({
-    TableName: TABLE,
-    Item: {
-      PK: `GROUP#${req.params.id}`,
-      SK: `REPORT#${Date.now()}`,
-      trigger,
-      reportedBy: req.userEmail,
-      affectedMembers: affectedCount,
-      timestamp: new Date().toISOString()
-    }
-  }));
-  
-  res.json({ success: true, data: { message: 'Trigger reported', affectedMembers: affectedCount } });
+  res.json({ success: true, data: { message: 'Trigger reported' } });
 });
 
 router.get('/:id/messages', authMiddleware, async (req, res) => {
@@ -94,21 +58,7 @@ router.get('/:id/messages', authMiddleware, async (req, res) => {
   if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
   if (!group.members.includes(req.userEmail)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
   
-  const { QueryCommand } = require('@aws-sdk/lib-dynamodb');
-  const { Items } = await db.send(new QueryCommand({
-    TableName: TABLE,
-    KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-    ExpressionAttributeValues: { ':pk': `GROUP#${req.params.id}`, ':sk': 'REPORT#' },
-    ScanIndexForward: false,
-    Limit: 50
-  }));
-  
-  const messages = (Items || []).map(i => ({
-    text: i.trigger,
-    reportedBy: i.reportedBy,
-    timestamp: i.timestamp
-  }));
-  
+  const messages = await getGroupMessages(req.params.id);
   res.json({ success: true, data: messages });
 });
 
@@ -117,13 +67,9 @@ router.delete('/:id/messages/:timestamp', authMiddleware, async (req, res) => {
   if (!group) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Group not found' } });
   if (!group.members.includes(req.userEmail)) return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not a member' } });
   
-  const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
-  await db.send(new DeleteCommand({
-    TableName: TABLE,
-    Key: { PK: `GROUP#${req.params.id}`, SK: `REPORT#${req.params.timestamp}` }
-  }));
-  
+  await deleteGroupMessage(req.params.id, req.params.timestamp);
   res.json({ success: true, data: { message: 'Trigger deleted' } });
 });
 
+module.exports = router;
 module.exports = router;

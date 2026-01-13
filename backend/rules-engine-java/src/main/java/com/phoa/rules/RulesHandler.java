@@ -2,22 +2,21 @@ package com.phoa.rules;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.*;
-import software.amazon.awssdk.regions.Region;
+import com.google.gson.*;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.reasoner.*;
+import org.apache.jena.reasoner.rulesys.*;
+import java.net.http.*;
+import java.net.URI;
 import java.util.*;
 
 public class RulesHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
     
-    private static final String PHOA = "http://example.org/phoa#";
-    private static final DynamoDbClient ddb = DynamoDbClient.builder()
-            .region(Region.US_EAST_1).build();
-    
-    private static final Map<String, Double> TOLERANCES = Map.of(
-        "heart_rate", 10.0, "noise_level", 15.0, "temperature", 5.0, 
-        "altitude", 20.0, "weather_code", 0.0
-    );
+    private static final String PHOA = "http://phoa.com/";
+    private static final String SCHEMA = "http://schema.org/";
+    private static final String FUSEKI_QUERY = "http://54.91.118.146:3030/phoa/query";
+    private static final HttpClient httpClient = HttpClient.newHttpClient();
+    private static final Gson gson = new Gson();
 
     @Override
     public Map<String, Object> handleRequest(Map<String, Object> input, Context ctx) {
@@ -25,56 +24,131 @@ public class RulesHandler implements RequestHandler<Map<String, Object>, Map<Str
         Map<String, Object> sensors = (Map<String, Object>) input.get("context");
         List<Map<String, String>> groupMsgs = (List<Map<String, String>>) 
             input.getOrDefault("groupMessages", new ArrayList<>());
-        
-        List<Map<String, AttributeValue>> dbRules = ddb.scan(
-            ScanRequest.builder().tableName("phoa-triggers").build()
-        ).items();
-        
-        Model model = ModelFactory.createDefaultModel();
-        Resource user = model.createResource(PHOA + "user");
-        Resource context = model.createResource(PHOA + "context");
-        
-        for (String phobiaId : userPhobias) {
-            user.addProperty(model.createProperty(PHOA + "hasPhobia"), phobiaId);
+
+        try {
+            Model model = loadFacts(userPhobias, sensors, groupMsgs);
+            System.out.println("✅ Facts loaded");
+            
+            List<Rule> jenaRules = buildJenaRules(userPhobias);
+            System.out.println("✅ Rules built: " + jenaRules.size());
+            
+            Reasoner reasoner = new GenericRuleReasoner(jenaRules);
+            InfModel inf = ModelFactory.createInfModel(reasoner, model);
+            System.out.println("✅ Inference complete");
+            
+            List<Map<String, Object>> alerts = extractAlerts(inf);
+            System.out.println("✅ Alerts extracted: " + alerts.size());
+
+            return Map.of("success", true, "alerts", alerts, "rdfTriples", model.size());
+        } catch (Exception e) {
+            System.err.println("❌ Error: " + e.getMessage());
+            e.printStackTrace();
+            return Map.of("success", false, "error", e.getMessage());
         }
+    }
+
+    private Model loadFacts(List<String> phobias, Map<String, Object> sensors, List<Map<String, String>> msgs) {
+        Model model = ModelFactory.createDefaultModel();
+        Resource user = model.createResource(PHOA + "user/current");
         
-        sensors.forEach((name, value) -> {
-            if (value == null) return;
-            Property prop = model.createProperty(PHOA + name);
-            if (value instanceof Number) {
-                context.addLiteral(prop, ((Number) value).doubleValue());
-            } else if (value instanceof Boolean) {
-                context.addLiteral(prop, (Boolean) value);
-            } else {
-                context.addProperty(prop, value.toString().toLowerCase());
+        System.out.println("📝 Loading facts:");
+        
+        for (String id : phobias) {
+            user.addProperty(model.createProperty(SCHEMA + "medicalCondition"), 
+                           model.createResource(PHOA + "phobia/" + id));
+            System.out.println("  ✓ Phobia: " + id);
+        }
+
+        sensors.forEach((k, v) -> {
+            if (v != null) {
+                Property p = model.createProperty(PHOA + k);
+                if (v instanceof Number) {
+                    user.addLiteral(p, ((Number) v).longValue());
+                    System.out.println("  ✓ Sensor " + k + ": " + ((Number) v).longValue());
+                } else {
+                    user.addProperty(p, v.toString().toLowerCase());
+                    System.out.println("  ✓ Sensor " + k + ": " + v.toString().toLowerCase());
+                }
             }
         });
-        
-        List<Map<String, Object>> alerts = new ArrayList<>();
-        
-        for (String phobiaId : userPhobias) {
-            Map<String, AttributeValue> rule = dbRules.stream()
-                .filter(r -> r.get("phobiaId").s().equals(phobiaId))
-                .findFirst().orElse(null);
-            if (rule == null) continue;
-            
-            String phobiaName = rule.get("phobiaName").s();
-            String mainTrigger = rule.containsKey("mainTrigger") ? rule.get("mainTrigger").s() : "";
-            List<AttributeValue> sensorRules = rule.get("sensorRules").l();
-            
-            boolean sensorMatch = matchSensors(sensorRules, sensors);
-            boolean textMatch = matchText(mainTrigger, groupMsgs);
-            
-            boolean shouldAlert = mainTrigger.isEmpty() ? sensorMatch : (sensorMatch && textMatch);
-            
-            if (shouldAlert) {
-                Resource alert = model.createResource(PHOA + "alert_" + phobiaId);
-                alert.addProperty(model.createProperty(PHOA + "forPhobia"), phobiaId);
-                alert.addProperty(model.createProperty(PHOA + "severity"), "high");
-                alert.addProperty(model.createProperty(PHOA + "triggeredBy"), "rule_based_inference");
+
+        StringBuilder sb = new StringBuilder();
+        msgs.forEach(m -> sb.append(m.getOrDefault("text", "")).append(" "));
+        if (sb.length() > 0) {
+            user.addProperty(model.createProperty(PHOA + "groupText"), sb.toString().toLowerCase());
+            System.out.println("  ✓ GroupText: " + sb.toString().toLowerCase());
+        }
+
+        return model;
+    }
+
+    private List<Rule> buildJenaRules(List<String> phobias) {
+        List<Rule> rules = new ArrayList<>();
+        for (String id : phobias) {
+            try {
+                String sparql = "PREFIX phoa: <http://phoa.com/> " +
+                               "SELECT ?trig ?hr WHERE { " +
+                               "  <http://phoa.com/rule/" + id + "> a <http://schema.org/PropertyValueSpecification> . " +
+                               "  OPTIONAL { <http://phoa.com/rule/" + id + "> phoa:mainTrigger ?trig } " +
+                               "  OPTIONAL { <http://phoa.com/rule/" + id + "> phoa:heart_rate ?hr } " +
+                               "}";
                 
-                Map<String, AttributeValue> phobiaData = getPhobiaData(phobiaId);
-                List<String> recommendations = extractRecommendations(phobiaData);
+                String json = querySparql(sparql);
+                System.out.println("📊 Fuseki for " + id + ": " + json.substring(0, Math.min(150, json.length())));
+                
+                StringBuilder body = new StringBuilder();
+                body.append(String.format("(?u <%smedicalCondition> <%sphobia/%s>) ", SCHEMA, PHOA, id));
+
+                if (json.contains("\"trig\"")) {
+                    String t = safeExtract(json, "trig");
+                    if (t != null) {
+                        String clean = t.replace(" ", ".*");
+                        body.append(String.format("(?u <%sgroupText> ?txt) regex(?txt, '.*%s.*', 'i') ", PHOA, clean));
+                        System.out.println("  ✓ Trigger: " + clean);
+                    }
+                }
+
+                if (json.contains("\"hr\"")) {
+                    String hr = safeExtract(json, "hr");
+                    if (hr != null) {
+                        body.append(String.format("(?u <%sheart_rate> ?h) ge(?h, %s) ", PHOA, hr));
+                        System.out.println("  ✓ Heart rate: >= " + hr);
+                    }
+                }
+
+                String ruleStr = String.format("[rule_%s: %s -> (?u <%sneedsAlert> '%s')]", id, body, PHOA, id);
+                rules.add(Rule.parseRule(ruleStr));
+                System.out.println("✅ Rule: " + ruleStr);
+            } catch (Exception e) {
+                System.err.println("❌ Error building rule for " + id + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        System.out.println("📝 Total: " + rules.size() + " rules");
+        return rules;
+    }
+
+    private List<Map<String, Object>> extractAlerts(InfModel inf) {
+        List<Map<String, Object>> alerts = new ArrayList<>();
+        Property needsAlert = inf.createProperty(PHOA + "needsAlert");
+        Resource user = inf.createResource(PHOA + "user/current");
+        
+        StmtIterator it = inf.listStatements(user, needsAlert, (RDFNode)null);
+        while (it.hasNext()) {
+            String phobiaId = it.nextStatement().getObject().toString();
+            
+            try {
+                String sparql = String.format(
+                    "PREFIX schema: <http://schema.org/> " +
+                    "SELECT ?name WHERE { " +
+                    "  <http://phoa.com/phobia/%s> schema:name ?name . " +
+                    "}", phobiaId);
+                
+                String json = querySparql(sparql);
+                String phobiaName = safeExtract(json, "name");
+                if (phobiaName == null) phobiaName = phobiaId;
+                
+                List<String> recommendations = getRecommendations(phobiaId);
                 
                 alerts.add(Map.of(
                     "id", "alert-" + System.currentTimeMillis(),
@@ -85,95 +159,103 @@ public class RulesHandler implements RequestHandler<Map<String, Object>, Map<Str
                     "recommendations", recommendations,
                     "createdAt", new Date().toString()
                 ));
+            } catch (Exception e) {
+                System.err.println("Error getting phobia details: " + e.getMessage());
             }
         }
-        
-        return Map.of("success", true, "alerts", alerts, "rdfTriples", model.size());
+        return alerts;
     }
     
-    private boolean matchSensors(List<AttributeValue> rules, Map<String, Object> sensors) {
-        int matched = 0, total = 0;
-        
-        for (AttributeValue ruleAttr : rules) {
-            Map<String, AttributeValue> rule = ruleAttr.m();
-            String name = rule.get("name").s();
-            AttributeValue val = rule.get("value");
-            
-            if (val.nul() != null && val.nul()) continue;
-            total++;
-            
-            Object actual = sensors.get(name);
-            if (actual == null) continue;
-            
-            boolean match = false;
-            
-            if (val.s() != null) {
-                match = val.s().equalsIgnoreCase(actual.toString());
-            } else if (val.n() != null) {
-                double expected = Double.parseDouble(val.n());
-                double actualVal = ((Number) actual).doubleValue();
-                double tolerance = TOLERANCES.getOrDefault(name, 0.0);
-                match = Math.abs(actualVal - expected) <= tolerance;
-            } else if (val.bool() != null) {
-                match = val.bool().equals(actual);
-            }
-            
-            if (match) matched++;
-        }
-        
-        return total > 0 && (double) matched / total >= 0.6;
-    }
-    
-    private boolean matchText(String trigger, List<Map<String, String>> messages) {
-        if (trigger == null || trigger.isEmpty()) return true;
-        if (messages == null || messages.isEmpty()) return false;
-        
-        String[] words = trigger.toLowerCase().split("[\\s,]+");
-        return messages.stream().anyMatch(msg -> {
-            String text = msg.getOrDefault("text", "").toLowerCase();
-            return Arrays.stream(words).anyMatch(text::contains);
-        });
-    }
-    
-    private Map<String, AttributeValue> getPhobiaData(String phobiaId) {
+    private List<String> getRecommendations(String phobiaId) {
         try {
-            GetItemResponse response = ddb.getItem(GetItemRequest.builder()
-                .tableName("phoa-data")
-                .key(Map.of("PK", AttributeValue.builder().s("PHOBIA#" + phobiaId).build(),
-                           "SK", AttributeValue.builder().s("META").build()))
-                .build());
-            return response.item();
-        } catch (Exception e) {
-            return new HashMap<>();
-        }
-    }
-    
-    private List<String> extractRecommendations(Map<String, AttributeValue> phobiaData) {
-        List<String> recs = new ArrayList<>();
-        if (phobiaData.isEmpty()) return recs;
-        
-        AttributeValue treatments = phobiaData.get("possibleTreatment");
-        if (treatments != null && treatments.l() != null) {
-            for (AttributeValue treatment : treatments.l()) {
-                Map<String, AttributeValue> t = treatment.m();
-                String name = t.containsKey("name") ? t.get("name").s() : "";
-                String desc = t.containsKey("description") ? t.get("description").s() : "";
-                String url = t.containsKey("url") ? t.get("url").s() : "";
+            String sparql = String.format(
+                "PREFIX schema: <http://schema.org/> " +
+                "PREFIX phoa: <http://phoa.com/> " +
+                "SELECT ?name ?desc ?url WHERE { " +
+                "  ?treatment phoa:forPhobia <http://phoa.com/phobia/%s> ; " +
+                "    schema:name ?name . " +
+                "  OPTIONAL { ?treatment schema:description ?desc } " +
+                "  OPTIONAL { ?treatment schema:url ?url } " +
+                "}", phobiaId);
+            
+            String json = querySparql(sparql);
+            JsonObject root = gson.fromJson(json, JsonObject.class);
+            JsonArray bindings = root.getAsJsonObject("results").getAsJsonArray("bindings");
+            
+            List<String> recs = new ArrayList<>();
+            for (int i = 0; i < bindings.size(); i++) {
+                JsonObject binding = bindings.get(i).getAsJsonObject();
                 
-                if (!name.isEmpty()) {
+                String name = binding.has("name") ? 
+                    binding.getAsJsonObject("name").get("value").getAsString() : null;
+                String desc = binding.has("desc") ? 
+                    binding.getAsJsonObject("desc").get("value").getAsString() : null;
+                String url = binding.has("url") ? 
+                    binding.getAsJsonObject("url").get("value").getAsString() : null;
+                
+                if (name != null) {
                     String rec = name;
-                    if (!desc.isEmpty()) rec += ": " + desc;
-                    if (!url.isEmpty()) rec += " [" + url + "]";
+                    if (desc != null && !desc.isEmpty()) rec += ": " + desc;
+                    if (url != null && !url.isEmpty()) rec += " [" + url + "]";
                     recs.add(rec);
                 }
             }
+            
+            if (recs.isEmpty()) {
+                recs.add("Practice deep breathing exercises");
+                recs.add("Find a safe space");
+            }
+            
+            return recs;
+        } catch (Exception e) {
+            System.err.println("Error getting recommendations: " + e.getMessage());
+            return List.of("Practice deep breathing", "Seek support");
         }
-        
-        if (recs.isEmpty()) {
-            recs.add("Practice deep breathing exercises");
-            recs.add("Find a safe space");
+    }
+    
+    private String safeExtractFrom(String json, String key, int startIdx) {
+        try {
+            int keyIdx = json.indexOf("\"" + key + "\"", startIdx);
+            if (keyIdx == -1 || keyIdx > startIdx + 500) return null;
+            
+            int valueIdx = json.indexOf("\"value\"", keyIdx);
+            if (valueIdx == -1) return null;
+            
+            int start = json.indexOf("\"", valueIdx + 8) + 1;
+            int end = json.indexOf("\"", start);
+            
+            return json.substring(start, end);
+        } catch (Exception e) {
+            return null;
         }
+    }
+
+    private String querySparql(String query) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(FUSEKI_QUERY))
+            .header("Content-Type", "application/sparql-query")
+            .header("Accept", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(query)).build();
         
-        return recs;
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+
+    private String safeExtract(String json, String key) {
+        try {
+            JsonObject root = gson.fromJson(json, JsonObject.class);
+            JsonArray bindings = root.getAsJsonObject("results").getAsJsonArray("bindings");
+            if (bindings.size() == 0) return null;
+            
+            JsonObject first = bindings.get(0).getAsJsonObject();
+            if (!first.has(key)) return null;
+            
+            String result = first.getAsJsonObject(key).get("value").getAsString();
+            System.out.println("🔍 Extracted " + key + ": " + result);
+            return result;
+        } catch (Exception e) {
+            System.err.println("❌ Extract failed for " + key + ": " + e.getMessage());
+            return null;
+        }
     }
 }

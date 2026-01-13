@@ -1,81 +1,43 @@
 const express = require('express');
 const router = express.Router();
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, ScanCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
-const { getPhobiaFromWikidata, searchPhobiasInWikidata } = require('../services/sparqlService');
-const { phobiaToRdf, remedyToRdf } = require('../services/rdfService');
+const axios = require('axios');
 
-const db = DynamoDBDocumentClient.from(new DynamoDBClient({ region: 'us-east-1' }));
-const TABLE = 'phoa-data';
-
-const phobias = [
-  {
-    id: 'claustrophobia',
-    name: 'Claustrophobia',
-    description: 'Fear of confined spaces',
-    wikidataId: 'Q186892',
-    symptoms: ['Panic attacks', 'Sweating', 'Rapid heartbeat'],
-    triggers: ['Elevators', 'Small rooms', 'Crowded spaces']
-  },
-  {
-    id: 'arachnophobia',
-    name: 'Arachnophobia',
-    description: 'Fear of spiders',
-    wikidataId: 'Q148028',
-    symptoms: ['Anxiety', 'Avoidance', 'Panic'],
-    triggers: ['Seeing spiders', 'Webs', 'Dark places']
-  },
-  {
-    id: 'acrophobia',
-    name: 'Acrophobia',
-    description: 'Fear of heights',
-    wikidataId: 'Q188552',
-    symptoms: ['Dizziness', 'Sweating', 'Nausea'],
-    triggers: ['Tall buildings', 'Bridges', 'Mountains']
-  }
-];
-
-const remedies = {
-  claustrophobia: [
-    { id: 'rem-1', type: 'exercise', name: 'Deep breathing', description: '4-4-4 breathing technique' },
-    { id: 'rem-2', type: 'resource', name: 'NHS Guide', description: 'Official NHS guide', url: 'https://www.nhs.uk/conditions/claustrophobia/' }
-  ],
-  arachnophobia: [
-    { id: 'rem-3', type: 'exercise', name: 'Gradual exposure', description: 'Start with pictures' },
-    { id: 'rem-4', type: 'game', name: 'Spider VR', description: 'VR exposure therapy' }
-  ],
-  acrophobia: [
-    { id: 'rem-5', type: 'exercise', name: 'Grounding technique', description: 'Focus on 5 things you can see' }
-  ]
-};
+const FUSEKI_URL = 'http://54.91.118.146:3030/phoa';
 
 router.get('/', async (req, res) => {
-  const format = req.query.format;
-  const q = req.query.q;
-  
-  // Search în Wikidata
-  if (q) {
-    return searchPhobiasInWikidata(q)
-      .then(results => res.json({ success: true, data: results }))
-      .catch(() => res.json({ success: true, data: [] }));
-  }
-  
-  // Citește din DynamoDB
   try {
-    const { Items } = await db.send(new ScanCommand({
-      TableName: TABLE,
-      FilterExpression: 'begins_with(PK, :pk)',
-      ExpressionAttributeValues: { ':pk': 'PHOBIA#' }
-    }));
+    console.log('Fetching phobias from Fuseki...');
+    const query = `
+      PREFIX schema: <http://schema.org/>
+      PREFIX phoa: <http://phoa.com/>
+      
+      SELECT ?id ?name ?description ?trigger WHERE {
+        ?phobia a schema:MedicalCondition ;
+          schema:identifier ?id ;
+          schema:name ?name ;
+          schema:description ?description .
+        OPTIONAL { ?phobia phoa:trigger ?trigger }
+      }
+    `;
     
-    // Sortează după număr de proprietăți
-    const phobias = (Items || []).sort((a, b) => {
-      const countA = [a.description !== 'No description available', a.image, a.nhsUrl, a.trigger, a.subreddit].filter(Boolean).length;
-      const countB = [b.description !== 'No description available', b.image, b.nhsUrl, b.trigger, b.subreddit].filter(Boolean).length;
-      return countB - countA;
+    const response = await axios.post(`${FUSEKI_URL}/query`, query, {
+      headers: {
+        'Content-Type': 'application/sparql-query',
+        'Accept': 'application/json'
+      },
+      timeout: 10000
     });
     
-    if (format === 'jsonld') {
+    console.log(`Fuseki returned ${response.data.results.bindings.length} phobias`);
+    
+    const phobias = response.data.results.bindings.map(b => ({
+      id: b.id.value,
+      name: b.name.value,
+      description: b.description.value,
+      trigger: b.trigger?.value || null
+    }));
+    
+    if (req.query.format === 'jsonld') {
       res.set('Content-Type', 'application/ld+json');
       return res.json({
         '@context': 'http://schema.org/',
@@ -90,36 +52,76 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
-  const phobia = phobias.find(p => p.id === req.params.id);
-  if (!phobia) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Phobia not found' } });
-  
   try {
-    const wikidata = await getPhobiaFromWikidata(phobia.wikidataId);
-    if (wikidata) {
-      phobia.wikidataLabel = wikidata.label;
-      phobia.wikidataDescription = wikidata.description;
+    const query = `
+      PREFIX schema: <http://schema.org/>
+      PREFIX phoa: <http://phoa.com/>
+      
+      SELECT ?name ?description ?trigger WHERE {
+        <http://phoa.com/phobia/${req.params.id}> a schema:MedicalCondition ;
+          schema:name ?name ;
+          schema:description ?description .
+        OPTIONAL { <http://phoa.com/phobia/${req.params.id}> phoa:trigger ?trigger }
+      }
+    `;
+    
+    const response = await axios.post(`${FUSEKI_URL}/query`, query, {
+      headers: {
+        'Content-Type': 'application/sparql-query',
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.data.results.bindings.length) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Phobia not found' } });
     }
-  } catch (e) {}
-  
-  if (req.query.format === 'jsonld') {
-    res.set('Content-Type', 'application/ld+json');
-    return res.json(phobiaToRdf(phobia));
+    
+    const b = response.data.results.bindings[0];
+    const phobia = {
+      id: req.params.id,
+      name: b.name.value,
+      description: b.description.value,
+      trigger: b.trigger?.value || null,
+      possibleTreatment: await getTreatments(req.params.id)
+    };
+    
+    res.json({ success: true, data: phobia });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }
-  res.json({ success: true, data: phobia });
 });
 
-router.get('/:id/remedies', (req, res) => {
-  const r = remedies[req.params.id];
-  if (!r) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Phobia not found' } });
-  
-  if (req.query.format === 'jsonld') {
-    res.set('Content-Type', 'application/ld+json');
-    return res.json({
-      '@context': { '@vocab': 'http://schema.org/', 'phoa': 'http://example.org/phoa#' },
-      '@graph': r.map(rem => remedyToRdf(rem, req.params.id))
+async function getTreatments(phobiaId) {
+  try {
+    const query = `
+      PREFIX schema: <http://schema.org/>
+      PREFIX phoa: <http://phoa.com/>
+      
+      SELECT ?type ?name ?desc ?url WHERE {
+        ?treatment phoa:forPhobia <http://phoa.com/phobia/${phobiaId}> ;
+          a ?type ;
+          schema:name ?name .
+        OPTIONAL { ?treatment schema:description ?desc }
+        OPTIONAL { ?treatment schema:url ?url }
+      }
+    `;
+    
+    const response = await axios.post(`${FUSEKI_URL}/query`, query, {
+      headers: {
+        'Content-Type': 'application/sparql-query',
+        'Accept': 'application/json'
+      }
     });
+    
+    return response.data.results.bindings.map(b => ({
+      '@type': b.type.value.split('/').pop(),
+      name: b.name.value,
+      description: b.desc?.value || '',
+      url: b.url?.value || ''
+    }));
+  } catch (err) {
+    return [];
   }
-  res.json({ success: true, data: r });
-});
+}
 
 module.exports = router;

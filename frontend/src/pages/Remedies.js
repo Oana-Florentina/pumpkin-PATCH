@@ -14,12 +14,13 @@ function Remedies({ selectedPhobias }) {
 
   const fetchPhobiasDetails = async () => {
     try {
-      const res = await fetch(`${API}/api/phobias`);
-      const data = await res.json();
-      if (data.success) {
-        const selected = data.data.filter(p => selectedPhobias.includes(p.id));
-        setPhobias(selected);
-      }
+      const details = await Promise.all(
+        selectedPhobias.map(id => 
+          fetch(`${API}/api/phobias/${id}`).then(r => r.json())
+        )
+      );
+      const phobias = details.filter(d => d.success).map(d => d.data);
+      setPhobias(phobias);
     } catch (err) {
       console.error('Failed to fetch:', err);
     } finally {
