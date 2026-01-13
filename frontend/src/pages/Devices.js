@@ -69,64 +69,58 @@ function Devices() {
       <h1>Sensor Monitoring</h1>
       <p className="subtitle">Real-time environmental and health data for phobia detection</p>
 
-      <div className="device-data-section">
-        <h2>Health Metrics</h2>
-        <div className="data-grid">
-          <div className="data-card" typeof="MedicalObservation">
-            <h3>❤️ Heart Rate</h3>
-            <p className="data-value" property="value">{deviceData.heartRate} BPM</p>
-          </div>
-          <div className="data-card">
-            <h3>📍 Location</h3>
-            <p className="data-value">{deviceData.location.name}</p>
-            <span className="data-status">{deviceData.location.type}</span>
-          </div>
-        </div>
-      </div>
-
       <div className="environmental-section">
-        <h2>Environmental Context</h2>
+        <h2>Current Sensors</h2>
         <div className="env-grid">
-              <div className="env-item">
-                <span className="env-label">🕐 Current Time</span>
-                <span className="env-value">{deviceData.currentTime} {deviceData.isNight ? '🌙 Night' : '☀️ Day'}</span>
-              </div>
-              <div className="env-item">
-                <span className="env-label">📍 Location Type</span>
-                <span className="env-value">{deviceData.location.type}</span>
-              </div>
-              <div className="env-item">
-                <span className="env-label">⛰️ Altitude</span>
-                <span className="env-value">{deviceData.altitude !== null ? `${deviceData.altitude}m` : 'N/A'}</span>
-              </div>
-              <div className="env-item">
-                <span className="env-label">🌡️ Temperature</span>
-                <span className="env-value">{deviceData.temperature !== null ? `${deviceData.temperature}°C` : 'N/A'}</span>
-              </div>
-              <div className="env-item">
-                <span className="env-label">🔊 Noise Level</span>
-                <span className="env-value">
-                  {deviceData.noiseLevel !== null ? `${deviceData.noiseLevel}dB` : 'Mic off'}
-                </span>
-                <button onClick={toggleMicrophone} className={micEnabled ? 'btn-disconnect' : 'btn-connect'} style={{marginTop: '5px', fontSize: '12px'}}>
-                  {micEnabled ? '🎤 Stop' : '🎤 Start'}
-                </button>
-              </div>
-              <div className="env-item">
-                <span className="env-label">🌅 Sunrise</span>
-                <span className="env-value">{deviceData.sunrise || 'N/A'}</span>
-              </div>
-              <div className="env-item">
-                <span className="env-label">🌇 Sunset</span>
-                <span className="env-value">{deviceData.sunset || 'N/A'}</span>
-              </div>
-            </div>
-            <p className="env-note">
-              💡 Sensor data helps detect phobia triggers like confined spaces, high altitudes, or darkness
-            </p>
+          <div className="env-item">
+            <span className="env-label">🕐 Current Time</span>
+            <span className="env-value">{deviceData.currentTime} {deviceData.isNight ? '🌙 Night' : '☀️ Day'}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">❤️ Heart Rate</span>
+            <span className="env-value">{deviceData.heartRate} BPM</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">📍 Location</span>
+            <span className="env-value">{deviceData.location.name}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🏷️ Location Type</span>
+            <span className="env-value">{deviceData.location.type}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">⛰️ Altitude</span>
+            <span className="env-value">{deviceData.altitude !== null ? `${deviceData.altitude}m` : 'N/A'}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🌡️ Temperature</span>
+            <span className="env-value">{deviceData.temperature !== null ? `${deviceData.temperature}°C` : 'N/A'}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🔊 Noise Level</span>
+            <span className="env-value">{deviceData.noiseLevel !== null ? `${deviceData.noiseLevel}dB` : 'Mic off'}</span>
+          </div>
+          <div className="env-item" onClick={toggleMicrophone} style={{cursor: 'pointer'}}>
+            <span className="env-label">🎤 Microphone</span>
+            <span className="env-value" style={{color: micEnabled ? '#4CAF50' : '#f44336'}}>
+              {micEnabled ? 'ON' : 'OFF'}
+            </span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🌅 Sunrise</span>
+            <span className="env-value">{deviceData.sunrise || 'N/A'}</span>
+          </div>
+          <div className="env-item">
+            <span className="env-label">🌇 Sunset</span>
+            <span className="env-value">{deviceData.sunset || 'N/A'}</span>
           </div>
         </div>
-      );
-    }
+        <p className="env-note">
+          💡 Sensor data helps detect phobia triggers like confined spaces, high altitudes, or darkness
+        </p>
+      </div>
+    </div>
+  );
+}
 
-    export default Devices;
+export default Devices;
