@@ -63,7 +63,7 @@
     <section typeof="sa:Abstract" id="abstract" role="doc-abstract">
       <h2>Abstract</h2>
       <p>
-        PhoA (Phobia Web Assistant) is a multi-device web application that provides context-aware phobia detection and personalized remedies through semantic web integration and rule-based inference. The system leverages Wikidata and DBpedia knowledge bases via SPARQL queries, implements RDF data modeling with Schema.org vocabulary, and uses Apache Jena for logical rule-based reasoning. Context-aware alerts are triggered based on environmental sensors (location, weather, temperature, altitude), physiological data (heart rate, noise level), and social triggers from user groups. The application integrates multiple external APIs (Open-Meteo, Nominatim, Sunrise-Sunset.org, TV Tropes) and uses Google Gemini AI for automated rule generation. Deployed on AWS cloud infrastructure with Lambda functions, DynamoDB, S3, and CloudFront, the system demonstrates modern web engineering practices including microservices architecture, serverless computing, and semantic web technologies. The rule-based approach using Apache Jena enables dynamic, data-driven phobia detection with tolerance-based sensor matching and RDF inference, fulfilling the bonus requirement for logical rule-based systems.
+        PhoA (Phobia Web Assistant) is a multi-device web application that provides context-aware phobia detection and personalized remedies through semantic web technologies and rule-based inference. The system stores all application data in Apache Jena Fuseki RDF triple store using Schema.org vocabulary, queries Wikidata and DBpedia knowledge bases via SPARQL, and implements logical reasoning with Jena's GenericRuleReasoner for automated phobia detection. Context-aware alerts are triggered based on environmental sensors (location, weather, temperature, altitude), physiological data (heart rate, noise level), and social triggers from user groups. The application integrates multiple external APIs (Open-Meteo, Nominatim, Sunrise-Sunset.org, TV Tropes) and uses Google Gemini AI for automated rule generation. Deployed on AWS cloud infrastructure with Lambda functions, EC2 (Fuseki), S3, and CloudFront, the system demonstrates modern web engineering practices including microservices architecture, serverless computing, and semantic web technologies with RDF-native data management. The rule-based approach using Apache Jena enables dynamic, data-driven phobia detection with SPARQL-based rule loading and RDF inference, fulfilling the bonus requirement for logical rule-based systems.
       </p>
     </section>
 
@@ -108,7 +108,7 @@
           <li>Integrate multiple knowledge bases (Wikidata, DBpedia, TV Tropes) via SPARQL queries</li>
           <li>Create context-aware alert system based on environmental and physiological sensors</li>
           <li>Provide multi-user support with group trigger reporting and QR code sharing</li>
-          <li>Deploy scalable microservices architecture on AWS cloud (Lambda, DynamoDB, S3, CloudFront)</li>
+          <li>Deploy scalable microservices architecture on AWS cloud (Lambda, EC2, S3, CloudFront)</li>
           <li>Generate sensor rules automatically using AI (Gemini 2.5 Flash)</li>
           <li>Aggregate remedies from multiple sources (DBpedia treatments, NHS guides, Reddit communities, TV Tropes media)</li>
         </ol>
@@ -141,8 +141,135 @@
       <section id="overview">
         <h3>3.1 Overview</h3>
         <p>
-          PhoA follows a microservices architecture with clear separation between frontend, backend services, and data storage. The system is deployed on AWS cloud infrastructure for scalability and reliability.
+          PhoA follows a microservices architecture with clear separation between frontend, backend services, and RDF data storage. The system is deployed on AWS cloud infrastructure for scalability and reliability.
         </p>
+        
+        <figure>
+          <svg width="1100" height="750" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <polygon points="0 0, 10 3, 0 6" fill="#666" />
+              </marker>
+            </defs>
+            
+            <!-- Frontend -->
+            <rect x="30" y="30" width="220" height="150" fill="#f3e5f5" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="140" y="55" text-anchor="middle" font-weight="bold" font-size="14">React Frontend</text>
+            <text x="140" y="80" text-anchor="middle" font-size="11">Dashboard (RDFa)</text>
+            <text x="140" y="100" text-anchor="middle" font-size="11">Alerts (RDFa)</text>
+            <text x="140" y="120" text-anchor="middle" font-size="11">Groups (RDFa)</text>
+            <text x="140" y="140" text-anchor="middle" font-size="11">Remedies (RDFa)</text>
+            <text x="140" y="160" text-anchor="middle" font-size="11">Device Simulation</text>
+            
+            <!-- CloudFront + S3 -->
+            <rect x="300" y="60" width="140" height="80" fill="#fff" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="370" y="90" text-anchor="middle" font-weight="bold">CloudFront CDN</text>
+            <text x="370" y="110" text-anchor="middle" font-size="11">+ S3 Bucket</text>
+            <text x="370" y="125" text-anchor="middle" font-size="11">Static Hosting</text>
+            
+            <!-- Lambda Layer -->
+            <rect x="20" y="210" width="620" height="180" fill="#fffde7" stroke="#999" stroke-width="1" stroke-dasharray="5,5" rx="5"/>
+            <text x="330" y="230" text-anchor="middle" font-weight="bold" font-size="12">AWS Lambda Functions</text>
+            
+            <!-- Backend Lambda -->
+            <rect x="40" y="250" width="140" height="120" fill="#fff3e0" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="110" y="270" text-anchor="middle" font-weight="bold" font-size="12">phoa-backend</text>
+            <text x="110" y="290" text-anchor="middle" font-size="10">Node.js</text>
+            <text x="110" y="310" text-anchor="middle" font-size="10">routes/users</text>
+            <text x="110" y="325" text-anchor="middle" font-size="10">routes/phobias</text>
+            <text x="110" y="340" text-anchor="middle" font-size="10">routes/groups</text>
+            <text x="110" y="355" text-anchor="middle" font-size="10">rdfService.js</text>
+            
+            <!-- Rules Engine -->
+            <rect x="200" y="250" width="140" height="120" fill="#fff3e0" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="270" y="270" text-anchor="middle" font-weight="bold" font-size="12">phoa-rules-engine</text>
+            <text x="270" y="290" text-anchor="middle" font-size="10">Java 11</text>
+            <text x="270" y="310" text-anchor="middle" font-size="10">Jena Reasoner</text>
+            <text x="270" y="325" text-anchor="middle" font-size="10">SPARQL Queries</text>
+            <text x="270" y="340" text-anchor="middle" font-size="10">Rule Inference</text>
+            
+            <!-- Sync Phobias -->
+            <rect x="360" y="250" width="130" height="55" fill="#fff3e0" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="425" y="270" text-anchor="middle" font-weight="bold" font-size="11">phoa-sync-phobias</text>
+            <text x="425" y="290" text-anchor="middle" font-size="10">Node.js</text>
+            
+            <!-- Generate Rules -->
+            <rect x="360" y="315" width="130" height="55" fill="#fff3e0" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="425" y="335" text-anchor="middle" font-weight="bold" font-size="11">phoa-generate-rules</text>
+            <text x="425" y="355" text-anchor="middle" font-size="10">Node.js + Gemini</text>
+            
+            <!-- Fuseki on EC2 -->
+            <rect x="80" y="450" width="380" height="200" fill="#e3f2fd" stroke="#333" stroke-width="3" rx="5"/>
+            <text x="270" y="480" text-anchor="middle" font-weight="bold" font-size="16">Apache Jena Fuseki 4.10.0</text>
+            <text x="270" y="505" text-anchor="middle" font-weight="bold" font-size="13">AWS EC2 t3.micro (Free Tier)</text>
+            <text x="270" y="530" text-anchor="middle" font-size="11">TDB Triple Store - Persistent Disk Storage</text>
+            <text x="270" y="555" text-anchor="middle" font-size="11">✓ 151 Phobias (schema:MedicalCondition)</text>
+            <text x="270" y="575" text-anchor="middle" font-size="11">✓ 20 Rules (schema:PropertyValueSpecification)</text>
+            <text x="270" y="595" text-anchor="middle" font-size="11">✓ 190 Treatments (schema:MedicalTherapy, WebPage)</text>
+            <text x="270" y="615" text-anchor="middle" font-size="11">✓ Groups (schema:Organization), Messages (schema:Message)</text>
+            <text x="270" y="635" text-anchor="middle" font-size="11">✓ User Associations (schema:Patient)</text>
+            
+            <!-- External Services -->
+            <rect x="720" y="30" width="180" height="100" fill="#e8f5e9" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="810" y="55" text-anchor="middle" font-weight="bold">Knowledge Bases</text>
+            <text x="810" y="75" text-anchor="middle" font-size="11">Wikidata SPARQL</text>
+            <text x="810" y="90" text-anchor="middle" font-size="11">DBpedia SPARQL</text>
+            <text x="810" y="105" text-anchor="middle" font-size="11">Open-Meteo API</text>
+            <text x="810" y="120" text-anchor="middle" font-size="11">TV Tropes</text>
+            
+            <rect x="720" y="160" width="180" height="70" fill="#e8f5e9" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="810" y="185" text-anchor="middle" font-weight="bold">Google Gemini AI</text>
+            <text x="810" y="205" text-anchor="middle" font-size="11">2.5 Flash Model</text>
+            <text x="810" y="220" text-anchor="middle" font-size="11">Rule Generation</text>
+            
+            <!-- Cognito -->
+            <rect x="720" y="260" width="180" height="60" fill="#fff9c4" stroke="#333" stroke-width="2" rx="5"/>
+            <text x="810" y="285" text-anchor="middle" font-weight="bold">AWS Cognito</text>
+            <text x="810" y="305" text-anchor="middle" font-size="11">User Authentication</text>
+            
+            <!-- Arrows -->
+            <path d="M 250 105 L 300 105" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 140 180 L 140 250" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 110 370 L 160 450" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 270 370 L 300 450" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 490 280 L 720 80" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 490 345 L 720 195" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 180 280 L 720 290" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 425 305 L 460 450" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- Labels -->
+            <text x="275" y="100" font-size="10">serves</text>
+            <text x="110" y="220" font-size="10">REST API</text>
+            <text x="120" y="420" font-size="10">SPARQL</text>
+            <text x="310" y="420" font-size="10">SPARQL</text>
+            <text x="600" y="70" font-size="10">queries</text>
+            <text x="600" y="260" font-size="10">AI prompts</text>
+            <text x="450" y="270" font-size="10">JWT</text>
+            <text x="445" y="390" font-size="10">writes</text>
+            
+            <!-- Legend -->
+            <text x="720" y="360" font-weight="bold" font-size="12">Legend:</text>
+            <rect x="720" y="375" width="25" height="20" fill="#e3f2fd" stroke="#333" stroke-width="2"/>
+            <text x="755" y="390" font-size="11">RDF Store</text>
+            <rect x="720" y="405" width="25" height="20" fill="#fff3e0" stroke="#333" stroke-width="2"/>
+            <text x="755" y="420" font-size="11">Lambda</text>
+            <rect x="720" y="435" width="25" height="20" fill="#f3e5f5" stroke="#333" stroke-width="2"/>
+            <text x="755" y="450" font-size="11">Frontend</text>
+            <rect x="720" y="465" width="25" height="20" fill="#e8f5e9" stroke="#333" stroke-width="2"/>
+            <text x="755" y="480" font-size="11">External</text>
+          </svg>
+          <figcaption>Figure 1: PhoA Microservices Architecture with Apache Jena Fuseki RDF Triple Store</figcaption>
+        </figure>
+      </section>
+
+      <section id="components">
+        <h3>3.2 Components</h3>
+            <text x="380" y="160" font-size="10">queries</text>
+            <text x="500" y="180" font-size="10">AI</text>
+            <text x="380" y="230" font-size="10">JWT</text>
+          </svg>
+          <figcaption>Figure 1: PhoA System Architecture with Apache Jena Fuseki RDF Triple Store</figcaption>
+        </figure>
       </section>
 
       <section id="components">
@@ -161,26 +288,46 @@
 
         <h4>3.2.2 Backend Services</h4>
         <p>
-          Node.js/Express microservices deployed on AWS Lambda:
+          Microservices architecture with Node.js/Express on AWS Lambda and Java on Lambda:
         </p>
         <ul>
-          <li><code>authService.js</code> - AWS Cognito authentication</li>
-          <li><code>rdfService.js</code> - RDF data conversion and Schema.org mapping</li>
-          <li><code>timeService.js</code> - Time-based alert generation</li>
-          <li><code>weatherService.js</code> - Open-Meteo API integration</li>
-          <li><code>sunriseSunsetService.js</code> - Daylight tracking for nyctophobia</li>
-          <li><code>nominatimService.js</code> - Location type detection</li>
+          <li><code>phoa-backend</code> (Node.js Lambda) - REST API with routes for:
+            <ul>
+              <li><code>routes/users.js</code> - User phobia management</li>
+              <li><code>routes/phobias.js</code> - Phobia catalog with SPARQL queries to Fuseki</li>
+              <li><code>routes/groups.js</code> - Group and message management</li>
+              <li><code>routes/alerts.js</code> - Alert orchestration</li>
+            </ul>
+          </li>
+          <li><code>services/rdfService.js</code> - SPARQL query interface to Fuseki (users, phobias, groups, messages)</li>
+          <li><code>services/authService.js</code> - AWS Cognito JWT validation</li>
+          <li><code>services/weatherService.js</code> - Open-Meteo API integration</li>
+          <li><code>services/nominatimService.js</code> - OpenStreetMap location type detection</li>
+          <li><code>services/sunriseSunsetService.js</code> - Daylight tracking for nyctophobia</li>
+          <li><code>phoa-rules-engine</code> (Java Lambda) - Apache Jena reasoner with dynamic rule loading from Fuseki</li>
+          <li><code>phoa-sync-phobias</code> (Node.js Lambda) - Wikidata phobia synchronization</li>
+          <li><code>phoa-generate-rules</code> (Node.js Lambda) - AI-powered rule generation with Gemini</li>
         </ul>
 
-        <h4>3.2.3 Data Storage</h4>
+        <h4>3.2.3 RDF Triple Store</h4>
         <p>
-          AWS DynamoDB for NoSQL data storage with tables for:
+          <strong>Apache Jena Fuseki 4.10.0</strong> deployed on AWS EC2 (t3.micro, free tier) serves as the primary data storage:
         </p>
         <ul>
-          <li>Users and authentication</li>
-          <li>Phobia definitions with Wikidata IDs</li>
-          <li>User-phobia associations</li>
-          <li>Alert history and context data</li>
+          <li><strong>Storage:</strong> TDB (Jena's native triple store) with persistent disk storage</li>
+          <li><strong>Endpoint:</strong> SPARQL 1.1 Query and Update endpoints at <code>http://[ec2-ip]:3030/phoa</code></li>
+          <li><strong>Vocabulary:</strong> Schema.org for all entities (MedicalCondition, Patient, Organization, Message, PropertyValueSpecification)</li>
+          <li><strong>Data Model:</strong>
+            <ul>
+              <li>151 phobias as <code>schema:MedicalCondition</code> with identifiers, names, descriptions, triggers</li>
+              <li>190 treatments as <code>schema:MedicalTherapy</code>, <code>schema:WebPage</code>, <code>schema:VideoGame</code></li>
+              <li>20 sensor rules as <code>schema:PropertyValueSpecification</code> with dynamic sensor conditions</li>
+              <li>Users as <code>schema:Patient</code> with <code>schema:medicalCondition</code> associations</li>
+              <li>Groups as <code>schema:Organization</code> with <code>schema:member</code> relationships</li>
+              <li>Messages as <code>schema:Message</code> with sender and group links</li>
+            </ul>
+          </li>
+          <li><strong>Authentication:</strong> AWS Cognito (separate from RDF store) for user credentials and JWT tokens</li>
         </ul>
       </section>
 
@@ -226,9 +373,14 @@
               <td>4 functions</td>
             </tr>
             <tr>
-              <td>Database</td>
-              <td>AWS DynamoDB</td>
-              <td>2 tables</td>
+              <td>RDF Triple Store</td>
+              <td>Apache Jena Fuseki</td>
+              <td>4.10.0</td>
+            </tr>
+            <tr>
+              <td>Compute</td>
+              <td>AWS EC2 (t3.micro)</td>
+              <td>Free tier</td>
             </tr>
             <tr>
               <td>CDN</td>
@@ -319,44 +471,81 @@ SELECT ?dbpedia WHERE {
       <section id="rule-based-system">
         <h3>4.3 Rule-Based Inference with Apache Jena</h3>
         <p>
-          PhoA implements a logical rule-based system using Apache Jena for phobia detection. Rules are stored as Schema.org PropertyValue objects in DynamoDB and dynamically loaded for inference.
+          PhoA implements a logical rule-based system using Apache Jena GenericRuleReasoner for automated phobia detection. Rules are stored as <code>schema:PropertyValueSpecification</code> in Fuseki RDF triple store and dynamically loaded via SPARQL queries for inference.
         </p>
         
-        <h4>4.3.1 Rule Structure</h4>
+        <h4>4.3.1 AI-Powered Rule Generation with Google Gemini</h4>
         <p>
-          Each phobia has 7 sensor rules with tolerance-based matching:
+          Rules are automatically generated using Google Gemini 2.5 Flash with specialized prompt engineering:
         </p>
-        <pre><code>{
-  "phobiaId": "Q220783",
-  "phobiaName": "arachnophobia",
-  "mainTrigger": "Araneae",
-  "sensorRules": [
-    {"@type": "PropertyValue", "name": "location_type", "value": "forest"},
-    {"@type": "PropertyValue", "name": "heart_rate", "value": 110, "unitText": "BPM"},
-    {"@type": "PropertyValue", "name": "season", "value": "Summer"},
-    {"@type": "PropertyValue", "name": "noise_level", "value": null}
-  ]
-}</code></pre>
+        <pre><code>ACT AS A SPECIALIST PSYCHOLOGIST AND DATA ENGINEER.
+CONTEXT: Phobia detection system. Map "${phobiaName}" (Trigger: "${mainTrigger}") to sensors.
+TASK: Imagine a panic episode and determine sensor thresholds.
 
-        <h4>4.3.2 Inference Process</h4>
+AVAILABLE SENSORS:
+- location_type: hospital, school, park, forest, apartments, bridge...
+- weather_code: 0 (clear), 3 (cloudy), 45 (fog), 61 (rain), 71 (snow), 95 (storm)
+- temperature: -30 to 50 °C
+- altitude: 0 to 3000 m
+- heart_rate: 40 to 200 BPM
+- noise_level: 0 to 120 dB
+- is_night: true or false
+- season: Spring, Summer, Fall, Winter
+
+OUTPUT: 7 Schema.org PropertyValue objects with sensor thresholds</code></pre>
+        <p>
+          Gemini analyzes phobia psychology and generates contextually appropriate sensor rules. For example, claustrophobia receives high heart_rate (110 BPM), confined location_type (elevator), and low noise_level thresholds.
+        </p>
+
+        <h4>4.3.2 RDF Rule Storage in Fuseki</h4>
+        <p>
+          Generated rules are stored in Fuseki as RDF triples:
+        </p>
+        <pre><code>@prefix schema: &lt;http://schema.org/&gt; .
+@prefix phoa: &lt;http://phoa.com/&gt; .
+
+phoa:rule/Q220783 a schema:PropertyValueSpecification ;
+    schema:name "arachnophobia" ;
+    phoa:mainTrigger "spider" ;
+    phoa:location_type "forest" ;
+    phoa:heart_rate 110 ;
+    phoa:season "Summer" ;
+    phoa:noise_level null .</code></pre>
+
+        <h4>4.3.3 Jena Reasoner Inference Process</h4>
         <ol>
-          <li>User's phobias and sensor data are inserted into Jena RDF model</li>
-          <li>Rules are loaded from DynamoDB and converted to RDF triples</li>
-          <li>Sensor matching with tolerances: ±10 BPM, ±5°C, ±15 dB, ±20m</li>
-          <li>Text matching for mainTrigger in group messages</li>
-          <li>Alert generated if ≥60% sensors match AND (mainTrigger matches OR no mainTrigger)</li>
-          <li>Recommendations retrieved from phobia's possibleTreatment</li>
+          <li><strong>Load Facts:</strong> User phobias, sensor data, and group messages inserted into Jena Model as RDF triples</li>
+          <li><strong>Query Rules from Fuseki:</strong> SPARQL queries retrieve sensor conditions for each user phobia</li>
+          <li><strong>Build Jena Rules:</strong> Dynamic rule construction from Fuseki data:
+            <pre><code>[rule_Q220783: 
+  (?u schema:medicalCondition phoa:phobia/Q220783)
+  (?u phoa:heart_rate ?h) ge(?h, 100)
+  (?u phoa:groupText ?txt) regex(?txt, '.*spider.*', 'i')
+  -> (?u phoa:needsAlert 'Q220783')]</code></pre>
+          </li>
+          <li><strong>Apply Reasoner:</strong> GenericRuleReasoner performs forward-chaining inference</li>
+          <li><strong>Extract Alerts:</strong> Query inferred <code>phoa:needsAlert</code> statements</li>
+          <li><strong>Retrieve Recommendations:</strong> SPARQL query to Fuseki for treatments linked to detected phobia</li>
         </ol>
 
-        <h4>4.3.3 RDF Model</h4>
+        <h4>4.3.4 Example: Claustrophobia Detection</h4>
         <p>
-          The Jena model contains triples representing:
+          <strong>Input Facts:</strong>
         </p>
-        <ul>
-          <li>User phobias: <code>:user :hasPhobia "Q220783"</code></li>
-          <li>Sensor facts: <code>:context :heart_rate 95</code></li>
-          <li>Alert results: <code>:alert :forPhobia "Q220783"</code></li>
-        </ul>
+        <pre><code>phoa:user/current schema:medicalCondition phoa:phobia/Q186892 .
+phoa:user/current phoa:heart_rate 100 .
+phoa:user/current phoa:groupText "confined space" .</code></pre>
+        <p>
+          <strong>Rule from Fuseki:</strong>
+        </p>
+        <pre><code>phoa:rule/Q186892 phoa:mainTrigger "confined space" ;
+                  phoa:heart_rate 100 .</code></pre>
+        <p>
+          <strong>Jena Inference:</strong> Reasoner matches conditions → infers <code>phoa:user/current phoa:needsAlert 'Q186892'</code>
+        </p>
+        <p>
+          <strong>Output:</strong> Alert with recommendations from Fuseki treatments
+        </p>
       </section>
         </p>
         
@@ -385,8 +574,40 @@ WHERE {
 }
 LIMIT 20</code></pre>
 
+        <h4>Query 3: Fuseki - Retrieve All Phobias</h4>
+        <pre><code>PREFIX schema: &lt;http://schema.org/&gt;
+PREFIX phoa: &lt;http://phoa.com/&gt;
+
+SELECT ?id ?name ?description ?trigger WHERE {
+  ?phobia a schema:MedicalCondition ;
+    schema:identifier ?id ;
+    schema:name ?name ;
+    schema:description ?description .
+  OPTIONAL { ?phobia phoa:trigger ?trigger }
+}</code></pre>
+
+        <h4>Query 4: Fuseki - Load Rules for Jena Reasoner</h4>
+        <pre><code>PREFIX phoa: &lt;http://phoa.com/&gt;
+
+SELECT ?trig ?hr WHERE {
+  &lt;http://phoa.com/rule/Q220783&gt; a &lt;http://schema.org/PropertyValueSpecification&gt; .
+  OPTIONAL { &lt;http://phoa.com/rule/Q220783&gt; phoa:mainTrigger ?trig }
+  OPTIONAL { &lt;http://phoa.com/rule/Q220783&gt; phoa:heart_rate ?hr }
+}</code></pre>
+
+        <h4>Query 5: Fuseki - Get Treatments for Phobia</h4>
+        <pre><code>PREFIX schema: &lt;http://schema.org/&gt;
+PREFIX phoa: &lt;http://phoa.com/&gt;
+
+SELECT ?name ?desc ?url WHERE {
+  ?treatment phoa:forPhobia &lt;http://phoa.com/phobia/Q220783&gt; ;
+    schema:name ?name .
+  OPTIONAL { ?treatment schema:description ?desc }
+  OPTIONAL { ?treatment schema:url ?url }
+}</code></pre>
+
         <p>
-          Additional queries retrieve therapeutic procedures, allergy information, and symptom data. Full query documentation available in <code>SPARQL_QUERIES.md</code>.
+          Additional queries retrieve group messages, user associations, and group members. All Fuseki queries use Schema.org vocabulary for semantic interoperability.
         </p>
       </section>
 
@@ -406,7 +627,7 @@ LIMIT 20</code></pre>
       <section id="rule-based">
         <h3>5.1 Rule-Based Reasoning with Apache Jena</h3>
         <p>
-          The system implements a logical rule-based approach using Apache Jena for intelligent alert generation. Rules are dynamically loaded from DynamoDB and applied through RDF inference.
+          The system implements a logical rule-based approach using Apache Jena for intelligent alert generation. Rules are dynamically loaded from Fuseki RDF triple store via SPARQL queries and applied through Jena reasoner inference.
         </p>
         
         <h4>5.1.1 Rule Structure (Schema.org PropertyValue)</h4>
@@ -497,7 +718,7 @@ Result: ALERT with recommendations:
           <li>Search functionality across 156 phobias from Wikidata</li>
           <li>Pagination (10 items per page)</li>
           <li>My Phobias section with selected phobias</li>
-          <li>Add/remove phobias with instant save to DynamoDB</li>
+          <li>Add/remove phobias with instant save to Fuseki via SPARQL UPDATE</li>
           <li>Phobia cards showing name, description, and trigger</li>
         </ul>
       </section>
@@ -548,14 +769,15 @@ Result: ALERT with recommendations:
       <section id="admin">
         <h3>6.5 Admin Panel</h3>
         <p>
-          Demonstration and management interface:
+          Administrative interface for data management and testing:
         </p>
         <ul>
           <li><strong>Authentication:</strong> Cognito login with admin email verification</li>
-          <li><strong>Sync Phobias:</strong> Trigger Lambda to sync from Wikidata + DBpedia + TV Tropes</li>
-          <li><strong>Generate Rules:</strong> Trigger AI Lambda to generate sensor rules with Gemini</li>
-          <li><strong>Test Scenarios:</strong> Custom form to test rule engine with any sensor combination</li>
-          <li><strong>Real-time Results:</strong> JSON display of alerts and RDF triple count</li>
+          <li><strong>Sync Phobias:</strong> Trigger Lambda to sync from Wikidata + DBpedia + TV Tropes, writes to Fuseki via SPARQL INSERT</li>
+          <li><strong>Generate Rules:</strong> Trigger AI Lambda (Gemini) to generate sensor rules, stores in Fuseki as schema:PropertyValueSpecification</li>
+          <li><strong>Test Scenarios:</strong> Custom form to test Jena rule engine with any sensor combination and phobia selection</li>
+          <li><strong>Real-time Results:</strong> JSON display of alerts, recommendations, and RDF triple count from Jena inference</li>
+          <li><strong>SHACL Validation:</strong> Validate RDF data against Schema.org shapes</li>
         </ul>
       </section>
     </section>
@@ -629,7 +851,8 @@ Result: ALERT with recommendations:
           <li><strong>Frontend:</strong> S3 bucket + CloudFront distribution (HTTPS)</li>
           <li><strong>Backend:</strong> 4 Lambda functions (phoa-backend, phoa-rules-engine, phoa-sync-phobias, phoa-generate-rules)</li>
           <li><strong>API Gateway:</strong> REST API endpoint</li>
-          <li><strong>Database:</strong> 2 DynamoDB tables</li>
+          <li><strong>RDF Storage:</strong> Apache Jena Fuseki on EC2 t3.micro (TDB triple store)</li>
+          <li><strong>Authentication:</strong> AWS Cognito user pool</li>
           <li><strong>CI/CD:</strong> GitHub Actions for automated deployment</li>
           <li><strong>Monitoring:</strong> CloudWatch billing alarm at $1 threshold</li>
         </ul>
@@ -653,7 +876,7 @@ Result: ALERT with recommendations:
         <ul>
           <li><strong>Frontend:</strong> AWS S3 + CloudFront</li>
           <li><strong>Backend:</strong> AWS Lambda with API Gateway</li>
-          <li><strong>Database:</strong> AWS DynamoDB</li>
+          <li><strong>RDF Storage:</strong> Apache Jena Fuseki (EC2)</li>
           <li><strong>CI/CD:</strong> GitHub Actions workflows</li>
         </ul>
       </section>
@@ -674,28 +897,29 @@ Result: ALERT with recommendations:
         
         <h4>8.2.1 RDF Model Construction</h4>
         <p>
-          The system constructs an RDF model with:
+          The Jena reasoner constructs an RDF model with user facts:
         </p>
         <pre><code>Model model = ModelFactory.createDefaultModel();
-Resource user = model.createResource(PHOA + "user");
-Resource context = model.createResource(PHOA + "context");
+Resource user = model.createResource(PHOA + "user/current");
 
-// Add user phobias
-user.addProperty(model.createProperty(PHOA + "hasPhobia"), phobiaId);
+// Add user phobias (Schema.org)
+user.addProperty(model.createProperty(SCHEMA + "medicalCondition"), 
+               model.createResource(PHOA + "phobia/Q220783"));
 
-// Add sensor facts
-context.addLiteral(model.createProperty(PHOA + "heart_rate"), 95.0);
-context.addProperty(model.createProperty(PHOA + "location_type"), "hospital");</code></pre>
+// Add sensor facts directly on user
+user.addLiteral(model.createProperty(PHOA + "heart_rate"), 100L);
+user.addProperty(model.createProperty(PHOA + "location_type"), "forest");
+user.addProperty(model.createProperty(PHOA + "groupText"), "i saw a spider");</code></pre>
 
-        <h4>8.2.2 Dynamic Rule Loading</h4>
+        <h4>8.2.2 Dynamic Rule Loading from Fuseki</h4>
         <p>
-          Rules are loaded from DynamoDB at runtime, not hardcoded:
+          Rules are loaded from Fuseki RDF triple store at runtime via SPARQL queries, not hardcoded:
         </p>
         <ul>
-          <li>Scan phoa-triggers table for all rules</li>
-          <li>For each user phobia, find matching rule</li>
-          <li>Apply tolerance-based matching for numeric sensors</li>
-          <li>Check text matching for mainTrigger in group messages</li>
+          <li>SPARQL query to Fuseki for rules matching user phobias</li>
+          <li>Extract sensor conditions (mainTrigger, heart_rate, location_type, etc.)</li>
+          <li>Build Jena rules dynamically with regex and numeric comparisons</li>
+          <li>Apply GenericRuleReasoner for forward-chaining inference</li>
         </ul>
 
         <h4>8.2.3 Inference Logic</h4>
@@ -726,7 +950,7 @@ THEN
           <li>Input: Phobia name, trigger, description</li>
           <li>Output: 7 Schema.org PropertyValue rules with sensor thresholds</li>
           <li>Example: "blood phobia" → location_type="hospital", heart_rate=120, temperature=18</li>
-          <li>Generated rules stored in phoa-triggers for Jena inference</li>
+          <li>Generated rules stored in Fuseki as schema:PropertyValueSpecification for Jena inference</li>
         </ul>
       </section>
 
@@ -746,8 +970,8 @@ THEN
           <li><strong>Input:</strong> Phobia name, psychological trigger, medical description</li>
           <li><strong>LLM Processing:</strong> Gemini analyzes text and applies learned patterns from medical literature</li>
           <li><strong>Output:</strong> 7 sensor rules with realistic thresholds (location, heart rate, temperature, noise, altitude, weather, season)</li>
-          <li><strong>Validation:</strong> Rules stored as Schema.org PropertyValue in DynamoDB</li>
-          <li><strong>Integration:</strong> Rules used by Apache Jena for inference</li>
+          <li><strong>Validation:</strong> Rules stored as Schema.org PropertyValueSpecification in Fuseki RDF store</li>
+          <li><strong>Integration:</strong> Rules loaded via SPARQL and used by Apache Jena reasoner for inference</li>
         </ol>
         
         <h4>8.4.3 Example Generation</h4>
@@ -1013,25 +1237,37 @@ Gemini Output:
         <h3>C. Team Contributions</h3>
         <h4>Member 1: Briana-Stefania Maftei</h4>
         <ul>
-          <li>Backend architecture and AWS deployment</li>
-          <li>Semantic web integration (RDF, SPARQL)</li>
+          <li>Backend architecture and AWS deployment (Lambda, EC2, S3, CloudFront)</li>
+          <li>Apache Jena Fuseki RDF triple store setup and configuration on EC2</li>
+          <li>SPARQL query implementation for Fuseki (rdfService.js)</li>
+          <li>Jena reasoner with dynamic rule loading from RDF store</li>
+          <li>Schema.org vocabulary mapping for all entities</li>
           <li>Authentication system (AWS Cognito)</li>
-          <li>DynamoDB database design and implementation</li>
           <li>Backend API routes and microservices</li>
-          <li>Rule-based alert system logic</li>
-          <li>Context-aware alert implementation</li>
+          <li>Rule-based alert system with Apache Jena GenericRuleReasoner</li>
+          <li>AI integration (Google Gemini for rule generation)</li>
+          <li>SHACL validation implementation</li>
+          <li>Admin panel backend</li>
+          <li>DBpedia and TV Tropes SPARQL integration</li>
+          <li>Data migration scripts and documentation</li>
+          <li>Technical documentation (scholarly report)</li>
         </ul>
 
         <h4>Member 2: Oana-Florentina Dumitriu</h4>
         <ul>
           <li>Frontend development (React components)</li>
-          <li>Semantic web integration (RDF, SPARQL)</li>
+          <li>Semantic web integration (RDF, SPARQL) - RDFa markup in HTML</li>
           <li>UI/UX design and responsive layout</li>
           <li>Device simulation and monitoring</li>
           <li>Dark mode and theme switching</li>
-          <li>API integrations (Open-Meteo, Nominatim, sunrise-sunset)</li>
-          <li>RDFa markup and Schema.org integration</li>
+          <li>API integrations (Open-Meteo, Nominatim, Sunrise-Sunset)</li>
+          <li>Context-aware alert implementation (frontend)</li>
+          <li>Schema.org RDFa integration in HTML pages</li>
           <li>Time-based and environmental services</li>
+          <li>README documentation and user guide</li>
+          <li>Video demonstration and user guide (phoa-user-guide.html)</li>
+          <li>Screenshots and visual documentation</li>
+          <li>Project documentation contributions</li>
         </ul>
       </section>
     </section>
