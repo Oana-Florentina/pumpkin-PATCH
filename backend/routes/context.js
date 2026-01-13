@@ -85,7 +85,6 @@ router.post('/', async (req, res) => {
     context.locationName = locationDetails?.address?.city || locationDetails?.address?.town || 'Unknown';
     context.location = locationDetails;
   }
-  }
 
   if (req.query.format === 'jsonld') {
     res.set('Content-Type', 'application/ld+json');
